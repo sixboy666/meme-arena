@@ -1,27 +1,38 @@
 # MEME ARENA
 
-Five chaotic, switchable meme micro-games in one HTML5 file — now with looping chiptune braindance beats, beat-synced visuals, and full brainrot captions. Zero dependencies, fully English, works on phone and desktop.
+Five chaotic, switchable micro-games in one HTML5 file — starring a fully ORIGINAL cast of confident idiots. Looping chiptune braindance beats, beat-synced visuals, Impact-font captions, zero dependencies, fully English, works on phone and desktop. No borrowed memes, no borrowed IP — every character and every slang word here was invented for this game.
 
 **Play now:** https://sixboy666.github.io/meme-arena/
 
+## The Cast (100% original)
+
+| Character | Bio |
+|-----------|-----|
+| **GOOBER** | professional orb. does nothing. does it perfectly. |
+| **SIR NUGGET** | crispy. classy. legally a snack. |
+| **SCOOPS** | melting since tuesday. still fine. |
+| **GILBERT** | pigeon. broker. buys every dip. |
+| **GERALD** | the croissant moon. silent. powerful. buttery. |
+| **THE HATER** | gray. grumpy. says nah. do not bonk. |
+
 ## Worlds
 
-| # | World | Vibe | Palette |
-|---|-------|------|---------|
-| 1 | DOGE FRENZY | Whack shibas, avoid trolls, hunt the rare GIGACHAD (+50) | Cream yellow |
-| 2 | NYAN DASH | Rainbow runner, jump the trolls in space | Neon void |
-| 3 | THIS IS FINE | Tap out flames, keep the coffee alive | Ember orange |
-| 4 | FROG DROP | Catch rare frogs, never hug the bombs | Toxic green |
-| 5 | STONKS TAP | Tap green, fear red, pump it to the moon | Bull-market blue |
+| # | World | Vibe |
+|---|-------|------|
+| 1 | GOOBER SMASH | Bonk rising goobers, hunt the rare GOLDEN CHADLET (+50), never bonk THE HATER |
+| 2 | NUGGET RUN | Double-jump THE HATERS across a neon void with a golden crumb trail, 3 lives |
+| 3 | MELTDOWN | Tap the furious heat spirits, keep SCOOPS solid-ish on the FROST meter |
+| 4 | BAO DROP | Catch BAO BAO buns and the GOLDEN BAO (+25) in the takeout box, fear the chili |
+| 5 | BREAD COIN | Tap green dips, dodge red SELLs, GILBERT whispers "bread.", baguette rocket flies to GERALD |
 
 ## Features
 
 - Looping procedural chiptune music, a different catchy melody per world (WebAudio, no files)
-- Beat-synced visuals: sun, planet, moon, bubbles and the score all pulse to the music
-- Brainrot meme captions in classic Impact font: SIGMA MODE, GIGACHAD STATUS, SHEESH, L + RATIO...
-- Combo milestones: x5 SHEESH, x10 SIGMA MODE, x15 GIGACHAD STATUS, x20 FINAL BOSS ENERGY
-- Combo scoring, lives, survival timer, ranks from CRINGE to GIGACHAD
-- Best scores saved locally on your device
+- Beat-synced visuals: the sky goober, GERALD, bubbles and the score all pulse to the music
+- Original slang lexicon in the scrolling ticker: MAXIMUM GOOB, LOAF LOCKED, SNACKCIDENT, BIG BAO ENERGY, CRUMB UP, DERPENED, GIGAGOOF...
+- Combo milestones: x5 CERTIFIED GOOFER, x10 MAXIMUM GOOB, x15 GIGAGOOF STATUS, x20 BRAIN OFF. VIBES ON.
+- End-of-round ranks from LIL GOOF to MAXIMUM GOOB, with unhinged flavor text
+- Combo scoring, lives, survival timer, per-world best scores saved locally on your device
 
 ## Controls
 
