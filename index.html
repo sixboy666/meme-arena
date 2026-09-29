@@ -165,7 +165,7 @@
         <div id="hudName">DOGE FRENZY</div>
         <div id="hudStats">
           <span>SCORE <b id="hudScore">0</b></span>
-          <span id="hudTimerWrap">TIME <b id="hudTime">30</b></span>
+          <span id="hudTimerWrap"><span id="hudTimerLabel">TIME</span> <b id="hudTime">30</b></span>
           <span id="hudCombo"></span>
         </div>
       </div>
@@ -294,7 +294,7 @@ const SCENES = [
 ];
 
 /* ---------------- shared game state ---------------- */
-const G = { idx:-1, scene:null, state:'idle', time:0, elapsed:0,
+const G = { idx:-1, scene:null, state:'idle', time:0, elapsed:0, runId:0,
             score:0, combo:0, bestCombo:0, lives:0, shake:0, go:0 };
 let W=0,H=0,DPR=1;
 let particles=[], texts=[];
@@ -396,8 +396,8 @@ const dogeScene = {
     let target=null, td=1e9;
     for(const h of this.holes){ const m=h.m;
       if(m&&m.state==='up'&&m.h>.35){
-        const d=Math.hypot(x-h.x,y-(h.y-m.h*34));
-        if(d<48 && d<td){ td=d; target=h; }
+        const d=Math.hypot(x-h.x,y-(h.y-m.h*36));
+        if(d<56 && d<td){ td=d; target=h; }
       }
     }
     if(!target) return;
@@ -1115,10 +1115,12 @@ function startRun(i){
   particles=[]; texts=[];
   G.score=0; G.combo=0; G.bestCombo=0; G.time=SCENES[i].duration||0; G.elapsed=0;
   G.lives = (i===1||i===3)?3:0; G.shake=0;
-  G.state='countdown';
+  G.state='countdown'; G.runId++;
   $('#result').classList.add('hidden');
   $('#hudName').textContent=SCENES[i].name;
-  $('#hudTimerWrap').style.display = (i===2)?'none':'';
+  // nyan (1) is lives-only; fine (2) shows survival time
+  $('#hudTimerWrap').style.display = (i===1)?'none':'';
+  $('#hudTimerLabel').textContent = (i===2)?'SURVIVE':'TIME';
   buildChips();
   resize();
   G.scene.start();
@@ -1127,22 +1129,25 @@ function startRun(i){
 
 function runCountdown(n){
   const box=$('#count'), txt=$('#countTxt');
+  const id=G.runId;
   box.classList.remove('hidden');
   const step=(v,label,wait,done)=>{
+    if(id!==G.runId) return;
     txt.textContent=label;
     txt.classList.remove('pop'); void txt.offsetWidth; txt.classList.add('pop');
     SFX.blip(v===0?900:440, v===0?1300:560, .12,'square',.08);
-    setTimeout(()=>{ if(v>0) step(v-1,String(v),wait,done); else { box.classList.add('hidden'); done&&done(); } }, wait);
+    setTimeout(()=>{ if(id!==G.runId) return;
+      if(v>0) step(v-1,String(v),wait,done); else { box.classList.add('hidden'); done&&done(); } }, wait);
   };
   step(n-1,String(n),700,()=>{ G.state='play'; G.go=.5;
     txt.textContent='GO!'; box.classList.remove('hidden');
     txt.classList.remove('pop'); void txt.offsetWidth; txt.classList.add('pop');
-    setTimeout(()=>box.classList.add('hidden'),480);
+    setTimeout(()=>{ if(id===G.runId) box.classList.add('hidden'); },480);
   });
 }
 
 function endRound(){
-  if(G.state==='over') return;
+  if(G.state==='over'||G.state==='countdown') return;
   G.state='over';
   SFX.end();
   const sc=Math.floor(G.score);
@@ -1226,9 +1231,9 @@ let last=performance.now();
 function frame(now){
   let dt=(now-last)/1000; last=now;
   dt=Math.min(.05,dt);
-  if(G.state==='play'){
+  if(G.state==='play' && SCENES[G.idx].duration){
     G.time-=dt;
-    if(SCENES[G.idx].duration && G.time<=0){ G.time=0; endRound(); }
+    if(G.time<=0){ G.time=0; endRound(); }
   }
   if(G.scene){
     G.scene.update(dt);
