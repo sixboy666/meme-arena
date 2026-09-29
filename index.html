@@ -775,18 +775,22 @@ function drawFineDog(x,y,s,t){
     ctx.quadraticCurveTo(i*s*.1+Math.sin(t*3+i)*6,s*.48,i*s*.1,s*.38);
     ctx.stroke();
   }
-  // speech bubble
-  const bw=Math.min(240,s*3.2);
-  ctx.font='italic 800 '+Math.max(12,s*.28)+'px "Trebuchet MS", sans-serif';
-  const tw=ctx.measureText(fineScene.bubble).width+22;
-  const bx=-s*1.9, by=-s*1.9;
+  // speech bubble (auto-sized to the line)
+  let fs=Math.max(12,s*.28);
+  ctx.font='italic 800 '+fs+'px "Trebuchet MS", sans-serif';
+  const maxBubbleW=W-60;
+  let tw=ctx.measureText(fineScene.bubble).width;
+  if(tw>maxBubbleW){ fs*=maxBubbleW/tw; ctx.font='italic 800 '+fs+'px "Trebuchet MS", sans-serif';
+    tw=ctx.measureText(fineScene.bubble).width; }
+  const bw=tw+22, bh=Math.max(s*.5,fs*1.9);
+  const bx=clamp(-s*.4-bw/2, 10, W-bw-10), by=-s*2.05;
   ctx.fillStyle='rgba(255,247,230,.95)';
-  rr(ctx,bx,by,Math.min(tw,bw*1.6),s*.52,10); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(bx+s*.4,by+s*.52); ctx.lineTo(bx+s*.62,by+s*.8);
-  ctx.lineTo(bx+s*.75,by+s*.52); ctx.fill();
-  ctx.fillStyle='#4a3514'; ctx.textAlign='left';
-  ctx.fillText(fineScene.bubble,bx+10,by+s*.34);
-  ctx.textAlign='center';
+  rr(ctx,bx,by,bw,bh,10); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(bx+bw*.32,by+bh); ctx.lineTo(bx+bw*.4,by+bh+s*.3);
+  ctx.lineTo(bx+bw*.45,by+bh); ctx.fill();
+  ctx.fillStyle='#4a3514'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText(fineScene.bubble,bx+11,by+bh/2+1);
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
   ctx.restore();
 }
 
@@ -1260,6 +1264,11 @@ function frame(now){
 }
 
 /* ---------------- boot ---------------- */
+// release focus from clicked buttons so Space (jump) never re-clicks a chip/button
+document.addEventListener('click',e=>{
+  const b=e.target.closest && e.target.closest('button');
+  if(b) setTimeout(()=>{ if(document.activeElement===b) b.blur(); },0);
+});
 buildCover();
 buildChips();
 resize();
