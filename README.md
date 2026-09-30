@@ -7,9 +7,11 @@ A brainrot micro-game collection built to be **clip-worthy**. Memes are not deco
 ## How it works
 
 - **5 absurd micro-worlds**, each a 10–30 second loop with its own color scheme.
-- **Random mutators** every round — BIG GOOFER MODE, GRAVITY FLIP, DOUBLE SUN, SUS BUNS, PANIC MODE... the rule you get changes how you play. Failures are absurd, not frustrating.
-- **Shareable result card** — end-of-round rank card (GIGAGOOF, CERTIFIED GOOFER, CRINGE...) downloads as a PNG, ready to post. Text is generated from your actual run.
-- **Procedural WebAudio** — chiptune beat, bonks, jumps, fails, combos. No audio files.
+- **Random mutators** every round — BIG GOOFER MODE, GRAVITY FLIP, DOUBLE SUN, SUS BUNS, PANIC MODE... every one is a real rule change (TRIPLE TROUBLE spawns goobers in threes, CONE OF DOOM slams a traffic cone you must not tap). Failures are absurd, not frustrating.
+- **Juice everywhere** — hit-stop freeze frames, screen flashes, combo milestone callouts (NICE → SHEESH → GOOF MODE → UNHINGED → GIGAGOOF), tap ripples, vignette, screen shake, phone haptics, countdown pulse and last-5-second panic ticks. Rounds ramp in difficulty the longer they go.
+- **3-second onboarding** — every world opens with a one-line hint and an intro banner; no reading required.
+- **Shareable result card** — end-of-round rank card with confetti, a fire/skull watermark, and a randomized verdict generated from your actual run, downloadable as PNG, ready to post.
+- **Procedural WebAudio** — chiptune beat, bonks, jumps, fails, combo pitch rises, milestone arpeggios. No audio files.
 - **Best scores** saved per scene on your device.
 
 ## Worlds
