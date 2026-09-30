@@ -190,11 +190,13 @@ function updateParticles(){
 function drawParticles(){
   for(const p of particles){
     ctx.save(); ctx.globalAlpha=clamp(p.life,0,1); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+    // glow effect
+    ctx.shadowColor=p.color; ctx.shadowBlur=p.size*2;
     ctx.fillStyle=p.color;
     ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);
     ctx.restore();
   }
-  ctx.globalAlpha=1;
+  ctx.globalAlpha=1; ctx.shadowBlur=0;
 }
 
 // screen shake
@@ -281,15 +283,17 @@ SCENES.push({
   drawGoober(g){
     const r = g.big? g.hole.r*1.1 : g.hole.r*0.8;
     ctx.save(); ctx.translate(g.x,g.y);
+    // glow effect
+    const isHaterLook = g.hater && !g.disguise;
+    const bodyColor = isHaterLook? '#666' : (g.big?'#FFD700':'#A3E635');
+    ctx.shadowColor=bodyColor; ctx.shadowBlur=g.big?25:15;
     // shadow
     ctx.fillStyle='rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.ellipse(0,r*0.9,r*0.8,r*0.25,0,0,Math.PI*2); ctx.fill();
     // body
-    const isHaterLook = g.hater && !g.disguise;
-    const bodyColor = isHaterLook? '#666' : (g.big?'#FFD700':'#A3E635');
     ctx.fillStyle=bodyColor;
     ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.stroke();
+    ctx.shadowBlur=0; ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.stroke();
     // eyes
     const eyeY=-r*0.1, eyeS=r*0.22;
     if(isHaterLook){
@@ -433,10 +437,12 @@ SCENES.push({
   drawNugget(n){
     ctx.save(); ctx.translate(n.x,n.y);
     if(this.state.flip) ctx.scale(1,-1);
+    // glow
+    ctx.shadowColor='#D4A017'; ctx.shadowBlur=20;
     // body (nugget)
     ctx.fillStyle='#D4A017';
     ctx.beginPath(); ctx.arc(0,0,n.r,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#7a5a0a'; ctx.lineWidth=3; ctx.stroke();
+    ctx.shadowBlur=0; ctx.strokeStyle='#7a5a0a'; ctx.lineWidth=3; ctx.stroke();
     // monocle
     ctx.strokeStyle='#000'; ctx.lineWidth=3;
     ctx.beginPath(); ctx.arc(-6,-4,8,0,Math.PI*2); ctx.stroke();
@@ -560,6 +566,8 @@ SCENES.push({
   drawScoops(sc){
     const m=sc.melty;
     ctx.save(); ctx.translate(sc.x,sc.y);
+    // glow
+    ctx.shadowColor='#FFF0E0'; ctx.shadowBlur=15;
     // cone
     ctx.fillStyle='#D4A017'; ctx.strokeStyle='#000'; ctx.lineWidth=3;
     ctx.beginPath(); ctx.moveTo(-sc.r*0.5,sc.r*0.4); ctx.lineTo(sc.r*0.5,sc.r*0.4); ctx.lineTo(0,sc.r*1.6); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -567,6 +575,7 @@ SCENES.push({
     ctx.fillStyle='#FFF0E0';
     const drip = m*sc.r*0.8;
     ctx.beginPath(); ctx.arc(0,-sc.r*0.2-drip*0.3,sc.r*(0.9-m*0.2),0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur=0;
     // drips
     for(let i=0;i<3;i++){
       const dx=(i-1)*sc.r*0.5;
@@ -696,9 +705,13 @@ SCENES.push({
   drawBao(it,sus){
     ctx.save(); ctx.translate(it.x,it.y); ctx.rotate(it.rot*0.3);
     if(this.state.invisible) ctx.globalAlpha=0.25;
+    // glow
+    const glowColor=sus?'#c8a0e0':'#FFF0E0';
+    ctx.shadowColor=glowColor; ctx.shadowBlur=12;
     // bun
-    ctx.fillStyle=sus?'#c8a0e0':'#FFF0E0'; ctx.strokeStyle='#000'; ctx.lineWidth=3;
+    ctx.fillStyle=glowColor; ctx.strokeStyle='#000'; ctx.lineWidth=3;
     ctx.beginPath(); ctx.arc(0,0,it.r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur=0;
     // fold
     ctx.beginPath(); ctx.arc(0,-it.r*0.3,it.r*0.7,Math.PI,Math.PI*2); ctx.stroke();
     // blush
@@ -805,8 +818,11 @@ SCENES.push({
   },
   drawGerald(x,y,r){
     ctx.save(); ctx.translate(x,y);
+    // glow
+    ctx.shadowColor='#F5DEB3'; ctx.shadowBlur=20;
     ctx.fillStyle='#F5DEB3'; ctx.strokeStyle='#000'; ctx.lineWidth=3;
     ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur=0;
     // craters
     ctx.fillStyle='rgba(0,0,0,0.15)';
     ctx.beginPath(); ctx.arc(-r*0.4,-r*0.2,r*0.2,0,Math.PI*2); ctx.arc(r*0.3,r*0.3,r*0.15,0,Math.PI*2); ctx.fill();
@@ -818,12 +834,15 @@ SCENES.push({
   },
   drawRocket(x,y){
     ctx.save(); ctx.translate(x,y);
+    // glow
+    ctx.shadowColor='#D4A017'; ctx.shadowBlur=20;
     // trail
     ctx.fillStyle='rgba(255,180,0,0.5)';
     for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(rand(-10,10),30+i*10+rand(0,10),rand(4,10),0,Math.PI*2);ctx.fill();}
     // body (baguette)
     ctx.fillStyle='#D4A017'; ctx.strokeStyle='#000'; ctx.lineWidth=3;
     ctx.beginPath(); ctx.ellipse(0,0,16,40,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur=0;
     // tip
     ctx.fillStyle='#8B4513'; ctx.beginPath(); ctx.moveTo(-10,-36); ctx.lineTo(0,-52); ctx.lineTo(10,-36); ctx.closePath(); ctx.fill(); ctx.stroke();
     // fins
@@ -1073,63 +1092,144 @@ function endRound(){
 }
 
 // ============================================================
-// COVER
+// COVER — dynamic animated brainrot experience
 // ============================================================
 let coverT=0;
+// cover-specific floating particles
+const coverParticles=[];
+function initCoverParticles(){
+  coverParticles.length=0;
+  for(let i=0;i<40;i++){
+    coverParticles.push({
+      x:rand(0,W), y:rand(0,H),
+      vx:rand(-20,20), vy:rand(-40,-10),
+      r:rand(2,8), rot:rand(0,Math.PI*2), vr:rand(-2,2),
+      color:pick(['#FF2D95','#00E5FF','#A3E635','#FFD700','#F0ABFC','#7C3AED']),
+      alpha:rand(0.3,0.8), shape:pick(['circle','rect','tri'])
+    });
+  }
+}
+initCoverParticles();
 function drawCover(){
   const sc=scene();
-  // bg gradient
+  // animated gradient bg with subtle hue shift
+  const hueShift=Math.sin(coverT*0.5)*10;
   const g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#0a0a1a'); g.addColorStop(1,'#1a0a2e');
+  g.addColorStop(0,`hsl(${260+hueShift},40%,12%)`);
+  g.addColorStop(0.5,`hsl(${280+hueShift},50%,16%)`);
+  g.addColorStop(1,`hsl(${240+hueShift},40%,10%)`);
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-  // floating meme words
-  ctx.globalAlpha=0.12; ctx.fillStyle='#fff'; ctx.font='900 28px Impact'; ctx.textAlign='center';
+  // animated grid lines (retro synthwave feel)
+  ctx.strokeStyle='rgba(0,229,255,0.06)'; ctx.lineWidth=1;
+  const gridOff=(coverT*30)%40;
+  for(let x=-40;x<W+40;x+=40){ ctx.beginPath(); ctx.moveTo(x+gridOff,0); ctx.lineTo(x+gridOff-40,H); ctx.stroke(); }
+  for(let y=0;y<H;y+=40){ ctx.beginPath(); ctx.moveTo(0,y+gridOff); ctx.lineTo(W,y+gridOff); ctx.stroke(); }
+  // floating particles
+  for(const p of coverParticles){
+    p.x+=p.vx*0.016; p.y+=p.vy*0.016; p.rot+=p.vr*0.016;
+    if(p.y<-20){p.y=H+20;p.x=rand(0,W);}
+    if(p.x<-20)p.x=W+20; if(p.x>W+20)p.x=-20;
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.globalAlpha=p.alpha*0.5;
+    ctx.fillStyle=p.color;
+    if(p.shape==='circle'){ ctx.beginPath(); ctx.arc(0,0,p.r,0,Math.PI*2); ctx.fill(); }
+    else if(p.shape==='rect'){ ctx.fillRect(-p.r,-p.r,p.r*2,p.r*2); }
+    else { ctx.beginPath(); ctx.moveTo(0,-p.r); ctx.lineTo(p.r*0.8,p.r*0.6); ctx.lineTo(-p.r*0.8,p.r*0.6); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+  // floating meme words with orbit
+  ctx.globalAlpha=0.15; ctx.fillStyle='#fff'; ctx.font='900 28px Impact'; ctx.textAlign='center';
   const words=['GIGAGOOF','BRAIN OFF','VIBES ON','MAXIMUM GOOB','GOOF AGAIN','BONK','STONKS','SUS'];
   for(let i=0;i<8;i++){
-    const x=(i*137+coverT*20)%(W+100)-50;
-    const y=((i*89)%H);
+    const ang=coverT*0.3+i*(Math.PI*2/8);
+    const x=W/2+Math.cos(ang)*W*0.42;
+    const y=H*0.45+Math.sin(ang)*H*0.35;
+    const size=24+Math.sin(coverT*2+i)*6;
+    ctx.font=`900 ${size}px Impact`;
     ctx.fillText(words[i%words.length],x,y);
   }
   ctx.globalAlpha=1;
-  // title
-  ctx.fillStyle='#fff'; ctx.font='900 56px Impact'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.lineWidth=6; ctx.strokeStyle='#000';
-  ctx.strokeText('GOOFER',W/2,H*0.18); ctx.fillText('GOOFER',W/2,H*0.18);
-  ctx.fillStyle='#FF2D95'; ctx.strokeText('GAUNTLET',W/2,H*0.28); ctx.fillText('GAUNTLET',W/2,H*0.28);
-  // subtitle
-  ctx.fillStyle='#00E5FF'; ctx.font='bold 16px Impact';
-  ctx.fillText('5 BRAINROT MICRO-GAMES',W/2,H*0.36);
-  // cast banner (bobbing characters)
-  const cy=H*0.52;
+  // title with glow effect
+  ctx.save();
+  ctx.shadowColor='#FF2D95'; ctx.shadowBlur=30;
+  ctx.fillStyle='#fff'; ctx.font='900 64px Impact'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.lineWidth=8; ctx.strokeStyle='#000';
+  const titleWobble=Math.sin(coverT*3)*2;
+  ctx.save(); ctx.translate(W/2+titleWobble,H*0.16);
+  ctx.strokeText('GOOFER',0,0); ctx.fillText('GOOFER',0,0);
+  ctx.restore();
+  ctx.shadowColor='#00E5FF'; ctx.shadowBlur=30;
+  ctx.fillStyle='#FF2D95'; ctx.font='900 56px Impact';
+  ctx.save(); ctx.translate(W/2-titleWobble,H*0.26);
+  ctx.strokeText('GAUNTLET',0,0); ctx.fillText('GAUNTLET',0,0);
+  ctx.restore();
+  ctx.restore();
+  // subtitle with rainbow shimmer
+  const rainbow=['#FF2D95','#00E5FF','#A3E635','#FFD700','#F0ABFC'];
+  const sub='5 BRAINROT MICRO-GAMES';
+  ctx.font='bold 18px Impact';
+  let sx=W/2 - ctx.measureText(sub).width/2;
+  for(let i=0;i<sub.length;i++){
+    const ch=sub[i];
+    const ci=Math.floor((coverT*3+i*0.3)%rainbow.length);
+    ctx.fillStyle=rainbow[ci];
+    ctx.fillText(ch,sx,H*0.34);
+    sx+=ctx.measureText(ch).width;
+  }
+  // cast banner with bobbing, rotation, and glow
+  const cy=H*0.50;
   const cast=['goober','nugget','melt','bao','bread'];
   cast.forEach((id,i)=>{
     const scn=SCENES.find(s=>s.id===id);
-    const x=W*0.2 + i*(W*0.15);
-    const bob=Math.sin(coverT*3+i)*6;
-    ctx.save(); ctx.translate(x,cy+bob);
-    ctx.fillStyle=scn.colors.accent; ctx.strokeStyle='#000'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(0,0,22,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle='#000'; ctx.font='bold 9px Impact'; ctx.textAlign='center';
-    ctx.fillText(scn.short,0,3);
+    const x=W*0.18 + i*(W*0.16);
+    const bob=Math.sin(coverT*3+i)*8;
+    const rot=Math.sin(coverT*2+i*0.7)*0.1;
+    const pulse=1+Math.sin(coverT*4+i)*0.1;
+    ctx.save(); ctx.translate(x,cy+bob); ctx.rotate(rot); ctx.scale(pulse,pulse);
+    // glow ring
+    ctx.strokeStyle=scn.colors.accent; ctx.lineWidth=4; ctx.globalAlpha=0.3+Math.sin(coverT*5+i)*0.2;
+    ctx.beginPath(); ctx.arc(0,0,32,0,Math.PI*2); ctx.stroke();
+    // character body
+    ctx.fillStyle=scn.colors.accent; ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.globalAlpha=1;
+    ctx.beginPath(); ctx.arc(0,0,26,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    // eyes
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(-8,-4,7,0,Math.PI*2); ctx.arc(8,-4,7,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.arc(-6,-4,3.5,0,Math.PI*2); ctx.arc(10,-4,3.5,0,Math.PI*2); ctx.fill();
+    // label
+    ctx.fillStyle='#fff'; ctx.font='bold 9px Impact'; ctx.textAlign='center'; ctx.globalAlpha=0.9;
+    ctx.fillText(scn.short,0,42);
     ctx.restore();
   });
-  // tagline
-  ctx.fillStyle='#fff'; ctx.font='bold 14px Impact';
-  ctx.fillText('3 SECONDS TO GOOF. 10 SECONDS TO LOSE.',W/2,H*0.66);
-  ctx.fillStyle='#FFD700'; ctx.font='bold 12px Impact';
-  ctx.fillText('WARNING: EXTREMELY CATCHY',W/2,H*0.70);
-  // start prompt
-  const pulse=1+Math.sin(coverT*5)*0.08;
-  ctx.save(); ctx.translate(W/2,H*0.82); ctx.scale(pulse,pulse);
-  ctx.fillStyle='#fff'; ctx.strokeStyle='#000'; ctx.lineWidth=5; ctx.font='900 28px Impact'; ctx.textAlign='center';
+  // tagline with bounce
+  ctx.save(); ctx.translate(W/2,H*0.64+Math.sin(coverT*4)*3);
+  ctx.fillStyle='#fff'; ctx.font='bold 15px Impact'; ctx.textAlign='center';
+  ctx.fillText('3 SECONDS TO GOOF. 10 SECONDS TO LOSE.',0,0);
+  ctx.restore();
+  // warning with pulse and color shift
+  const warnPulse=1+Math.sin(coverT*6)*0.15;
+  ctx.save(); ctx.translate(W/2,H*0.69); ctx.scale(warnPulse,warnPulse);
+  ctx.fillStyle=`hsl(${Math.floor(coverT*30)%60+45},100%,60%)`; ctx.font='900 13px Impact'; ctx.textAlign='center';
+  ctx.fillText('⚠ WARNING: EXTREMELY CATCHY ⚠',0,0);
+  ctx.restore();
+  // start prompt with dramatic pulse and glow
+  const pulse=1+Math.sin(coverT*5)*0.12;
+  const glow=20+Math.sin(coverT*8)*10;
+  ctx.save(); ctx.translate(W/2,H*0.80); ctx.scale(pulse,pulse);
+  ctx.shadowColor='#fff'; ctx.shadowBlur=glow;
+  ctx.fillStyle='#fff'; ctx.strokeStyle='#000'; ctx.lineWidth=6; ctx.font='900 30px Impact'; ctx.textAlign='center';
   ctx.strokeText('TAP ANYWHERE TO GOOF',0,0); ctx.fillText('TAP ANYWHERE TO GOOF',0,0);
   ctx.restore();
-  // best scores
-  ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='bold 11px Impact';
-  let by=H*0.92;
+  // best scores with slide-in effect
+  ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.font='bold 12px Impact'; ctx.textAlign='center';
+  let by=H*0.90;
   let txt='BEST: ';
-  SCENES.forEach((s,i)=>{ txt+=`${s.short}:${GAME.best[s.id]||0} `; });
+  SCENES.forEach((s,i)=>{ txt+=`${s.short}:${GAME.best[s.id]||0}  `; });
   ctx.fillText(txt,W/2,by);
+  // scanline overlay
+  ctx.fillStyle='rgba(0,0,0,0.03)';
+  for(let y=0;y<H;y+=4){ ctx.fillRect(0,y,W,2); }
 }
 
 // ============================================================
@@ -1238,14 +1338,57 @@ function updateHUD(){
 // ============================================================
 // KEYBOARD
 // ============================================================
+// keyboard state tracker for smooth held-key movement
+const keysDown={};
 window.addEventListener('keydown',e=>{
+  // prevent space/enter from re-triggering focused buttons (result card, chips)
+  if([' ','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) e.preventDefault();
+  keysDown[e.key.toLowerCase()]=true;
+  keysDown[e.key]=true;
   if(GAME.state==='playing'){
     const sc=scene();
     if(sc.onKey) sc.onKey(e.key);
-    if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+    // activate keyboard cursor for scenes without native keys
+    if(!sc.onKey){ keyCursor.active=true; keyCursor.x=keyCursor.x||W/2; keyCursor.y=keyCursor.y||H/2; }
   }
   if(GAME.state==='cover' && (e.key===' '||e.key==='Enter')){ startScene(GAME.sceneIdx); }
+  if(GAME.state==='result' && (e.key===' '||e.key==='Enter')){ document.getElementById('card').classList.remove('show'); startScene(GAME.sceneIdx); }
 });
+window.addEventListener('keyup',e=>{
+  keysDown[e.key.toLowerCase()]=false;
+  keysDown[e.key]=false;
+});
+// keyboard cursor for scenes without native keyboard support
+const keyCursor={x:0,y:0,active:false,speed:350};
+function updateKeyCursor(dt){
+  if(!keyCursor.active) return;
+  let dx=0,dy=0;
+  if(keysDown['arrowleft']||keysDown['a']) dx-=1;
+  if(keysDown['arrowright']||keysDown['d']) dx+=1;
+  if(keysDown['arrowup']||keysDown['w']) dy-=1;
+  if(keysDown['arrowdown']||keysDown['s']) dy+=1;
+  if(dx||dy){
+    const len=Math.hypot(dx,dy)||1;
+    keyCursor.x=clamp(keyCursor.x+dx/len*keyCursor.speed*dt,20,W-20);
+    keyCursor.y=clamp(keyCursor.y+dy/len*keyCursor.speed*dt,20,H-20);
+  }
+}
+function drawKeyCursor(){
+  if(!keyCursor.active) return;
+  ctx.save();
+  const t=performance.now()*0.005;
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2;
+  ctx.globalAlpha=0.6+Math.sin(t)*0.3;
+  const s=16;
+  ctx.beginPath();
+  ctx.moveTo(keyCursor.x-s,keyCursor.y); ctx.lineTo(keyCursor.x-s*0.4,keyCursor.y);
+  ctx.moveTo(keyCursor.x+s,keyCursor.y); ctx.lineTo(keyCursor.x+s*0.4,keyCursor.y);
+  ctx.moveTo(keyCursor.x,keyCursor.y-s); ctx.lineTo(keyCursor.x,keyCursor.y-s*0.4);
+  ctx.moveTo(keyCursor.x,keyCursor.y+s); ctx.lineTo(keyCursor.x,keyCursor.y+s*0.4);
+  ctx.stroke();
+  ctx.beginPath(); ctx.arc(keyCursor.x,keyCursor.y,3,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  ctx.restore();
+}
 
 // ============================================================
 // MAIN LOOP
@@ -1277,11 +1420,18 @@ function loop(now){
       }
       sc.update(dt);
       viralUpdate(dt);
+      updateKeyCursor(dt);
+      // keyboard cursor tap on space/enter for scenes without native keys
+      if((keysDown[' ']||keysDown['enter']) && !sc.onKey && !keyCursor._pressed){
+        keyCursor._pressed=true;
+        sc.onTap(keyCursor.x, keyCursor.y);
+      } else if(!(keysDown[' ']||keysDown['enter'])) keyCursor._pressed=false;
       sc.draw();
       updateParticles(); drawParticles();
       updateFloaters(); drawFloaters();
       drawViralOverlay();
       drawComments();
+      drawKeyCursor();
       // scene combo mirror
       if(sc.state && sc.state.combo!==undefined) GAME.combo=sc.state.combo;
     } else if(GAME.state==='countdown'){
