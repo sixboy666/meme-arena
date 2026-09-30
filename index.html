@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -874,85 +874,135 @@ SCENES.push({
 });
 
 // ============================================================
-// MEME AS MECHANIC — viral events, live comments, view counter
+// VIRAL EVENTS — mid-run chaos (memes as mechanics)
+// Every 12-20s something absurd flips the game.
 // ============================================================
-const VIRAL = { active:null, t:0, nextT:0 };
+const VIRAL = { active:null, t:0, nextT:0, flash:0 };
+let rizzMul=1, rizzStartScore=0;
 const VIRAL_EVENTS = [
-  { id:'ohio', label:'OHIO GRAVITY FLIP', dur:4, color:'#FF2D95', apply:()=>{ try{ scene().state.flip=!scene().state.flip; }catch(e){} }, revert:()=>{ try{ scene().state.flip=!scene().state.flip; }catch(e){} } },
-  { id:'rizz', label:'RIZZ OVERLOAD 2x PTS', dur:5, color:'#FFD700', apply:()=>{ rizzMul=2; }, revert:()=>{ const gained=GAME.score-rizzStartScore; if(gained>0){ GAME.score+=gained; floater(W/2,H*.4,'RIZZ BONUS +'+Math.floor(gained),'#FFD700',26); } rizzMul=1; } },
-  { id:'raid', label:'COMMENT RAID 🔥', dur:4, color:'#00E5FF', apply:()=>{ for(let i=0;i<12;i++) spawnComment(true); }, revert:()=>{} },
-  { id:'swap', label:'RULES JUST CHANGED', dur:3, color:'#fff', apply:()=>{ const m=pick(scene().mutators); if(m!==GAME.mutator){ GAME.mutator=m; showMutator(); try{ scene().reset(); }catch(e){} } }, revert:()=>{} }
+  { id:'ohio', label:'OHIO GRAVITY FLIP', dur:4, color:'#FF2D95',
+    apply:()=>{ try{ if('flip' in scene().state) scene().state.flip=!scene().state.flip; }catch(e){} },
+    revert:()=>{ try{ if('flip' in scene().state) scene().state.flip=!scene().state.flip; }catch(e){} } },
+  { id:'rizz', label:'RIZZ OVERLOAD 2x PTS', dur:5, color:'#FFD700',
+    apply:()=>{ rizzMul=2; rizzStartScore=GAME.score; },
+    revert:()=>{ const gained=GAME.score-rizzStartScore; if(gained>0){ GAME.score+=Math.floor(gained); floater(W/2,H*.4,'RIZZ BONUS +'+Math.floor(gained),'#FFD700',26); } rizzMul=1; } },
+  { id:'raid', label:'COMMENT RAID', dur:4, color:'#00E5FF',
+    apply:()=>{ for(let i=0;i<12;i++) spawnComment(); }, revert:()=>{} },
+  { id:'swap', label:'RULES JUST CHANGED', dur:3, color:'#fff',
+    apply:()=>{ const m=pick(scene().mutators); if(m!==GAME.mutator){ GAME.mutator=m; showMutator(); try{ scene().reset(); }catch(e){} } }, revert:()=>{} }
 ];
-const COMMENTS = [];
-const NPC_NAMES = ['goober_fan','nugget_enjoyer','scoops_irl','gilbertstans','gerald_disciple','skibidi_toilet_47','ohio_resident','rizzler_99','mewing_since_03','gyatt_goblin','glizzy_goblin','cope_seethe_','first_second_third','ratio_this','orb_worshipper'];
-const NPC_REACT = ['FIRST','RATIO','WHO ASKED','SKIBIDI','L + BOZO','WAIT FOR IT','BASED','CRINGE','SHEESH','OH FR?','NO WAY','SUS','GOATED','MID','SLAY','NO CAP','FR FR','BESTIE','RIZZ','GYATT','OHIO','SIGMA','GOATED WITH THE SAUCE','BRO WHAT','UNHINGED','DEMENTED','SLOPPY'];
-const NPC_CHALLENGES = [
+function viralReset(){
+  VIRAL.active=null; VIRAL.t=0; VIRAL.nextT=rand(12,18); VIRAL.flash=0;
+  rizzMul=1; rizzStartScore=0;
+  COMMENTS.length=0;
+  viewCount=1247+Math.floor(Math.random()*800);
+  scoreCapT=0; scoreCaption=pick(SCORE_CAPTIONS);
+  commentT=0;
+}
+function viralUpdate(dt){
+  // active event countdown
+  if(VIRAL.active){
+    VIRAL.t-=dt;
+    if(VIRAL.t<=0){ try{ VIRAL.active.revert(); }catch(e){} VIRAL.active=null; }
+  } else {
+    VIRAL.nextT-=dt;
+    if(VIRAL.nextT<=0){
+      VIRAL.active=pick(VIRAL_EVENTS);
+      VIRAL.t=VIRAL.active.dur;
+      VIRAL.flash=1;
+      try{ VIRAL.active.apply(); }catch(e){}
+      Audio.whoosh(); addShake(14);
+      floater(W/2,H*0.5, VIRAL.active.label, VIRAL.active.color, 30);
+      viewCount += Math.floor(rand(200,600));
+    }
+  }
+  if(VIRAL.flash>0) VIRAL.flash=Math.max(0,VIRAL.flash-dt*2);
+  // spawn comments
+  commentT+=dt;
+  if(commentT>rand(1.2,2.4)){ commentT=0; spawnComment(); }
+  // views tick up
+  viewCount += Math.random()<0.3?1:0;
+  // cycle score caption
+  scoreCapT+=dt;
+  if(scoreCapT>4){ scoreCapT=0; scoreCaption=pick(SCORE_CAPTIONS); }
+}
+function drawViralOverlay(){
+  if(VIRAL.flash>0){
+    ctx.save(); ctx.globalAlpha=VIRAL.flash*0.4;
+    ctx.fillStyle= VIRAL.active? VIRAL.active.color : '#fff';
+    ctx.fillRect(0,0,W,H); ctx.restore();
+  }
+  if(VIRAL.active){
+    ctx.save(); ctx.globalAlpha=0.9;
+    ctx.font='900 18px Impact'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.lineWidth=4; ctx.strokeStyle='#000';
+    const lbl='⚠ '+VIRAL.active.label+' '+Math.ceil(VIRAL.t)+'s';
+    ctx.strokeText(lbl,W/2,70); ctx.fillStyle=VIRAL.active.color; ctx.fillText(lbl,W/2,70);
+    ctx.restore();
+  }
+}
+
+// ============================================================
+// LIVE COMMENTS — NPC stream + challenges (memes as mechanics)
+// ============================================================
+const COMMENTS=[];
+const NPC_NAMES=['goober_fan','nugget_enjoyer','scoops_irl','gilbertstans','gerald_disciple','skibidi_47','ohio_resident','rizzler_99','mewing_since_03','gyatt_goblin','glizzy_king','cope_seethe_','ratio_this','orb_worshipper','based_dad','unhinged_au','slurp_juice','bonk_master','no_cap_fr','certified_au'];
+const NPC_REACT=['FIRST','RATIO','WHO ASKED','SKIBIDI','L + BOZO','WAIT FOR IT','BASED','CRINGE','SHEESH','OH FR?','NO WAY','SUS','GOATED','MID','SLAY','NO CAP','FR FR','BESTIE','RIZZ','GYATT','OHIO','SIGMA','BRO WHAT','UNHINGED','DEMENTED','SLOPPY','YAP SESSION','BRAIN ROT','LOCKED IN','TOO BERZY'];
+const NPC_CHALLENGES=[
   { txt:'bet you hit x5 combo', check:()=>GAME.combo>=5, reward:40 },
   { txt:'no way you get 100 pts', check:()=>GAME.score>=100, reward:50 },
   { txt:'survive 15s lol', check:()=>GAME.time>=15, reward:40 },
   { txt:'combo x10 or i quit', check:()=>GAME.combo>=10, reward:60 },
   { txt:'score 300 or cope', check:()=>GAME.score>=300, reward:80 }
 ];
-let viewCount=1247, scoreCapT=0, scoreCaption='SCORE', rizzMul=1, rizzStartScore=0;
-const SCORE_CAPTIONS = ['GOOFER POINTS','RIZZ COUNT','VIBES','CRUMBS','OHIO METER','DIGNITY LEFT','LOAF UNITS','GLUTEN GAINED','SKIBIDI LEVEL','UNHINGED METER'];
-function viralReset(){ VIRAL.active=null; VIRAL.t=0; VIRAL.nextT=rand(14,22); COMMENTS.length=0; viewCount=1247; scoreCapT=0; scoreCaption='SCORE'; rizzMul=1; }
-function spawnComment(force){
-  if(!force && Math.random()>.12) return;
-  if(Math.random()<.18){ const c=pick(NPC_CHALLENGES); COMMENTS.push({name:pick(NPC_NAMES), txt:c.txt, ttl:rand(4,7), challenge:c, done:false}); return; }
-  COMMENTS.push({name:pick(NPC_NAMES), txt:pick(NPC_REACT), ttl:rand(3,5.5), challenge:null, done:false});
-}
-function viralUpdate(dt){
-  viewCount += dt*rand(5,18)*(VIRAL.active?40:1);
-  scoreCapT-=dt; if(scoreCapT<=0){ scoreCaption=pick(SCORE_CAPTIONS); scoreCapT=rand(2.5,5); }
-  spawnComment(false);
-  for(let i=COMMENTS.length-1;i>=0;i--){ COMMENTS[i].ttl-=dt; if(COMMENTS[i].ttl<=0) COMMENTS.splice(i,1); }
-  for(const c of COMMENTS){ if(c.challenge&&!c.done&&c.challenge.check()){ c.done=true; GAME.score+=c.challenge.reward; Audio.coin(); floater(W/2,H*.35,'CHALLENGE +'+c.challenge.reward,'#FFD700',24); } }
-  if(VIRAL.active){
-    VIRAL.t-=dt;
-    if(VIRAL.t<=0){ VIRAL.active.revert(); VIRAL.active=null; addShake(8); }
+let commentT=0, viewCount=1247, scoreCapT=0, scoreCaption='GOOFER POINTS';
+const SCORE_CAPTIONS=['GOOFER POINTS','RIZZ COUNT','VIBES','CRUMBS','OHIO METER','DIGNITY LEFT','LOAF UNITS','GLUTEN GAINED','SKIBIDI LEVEL','UNHINGED METER','BRAIN CELLS LOST','GOOF STAMINA'];
+function spawnComment(){
+  const isChallenge = Math.random()<0.14;
+  let c;
+  if(isChallenge){
+    const ch=pick(NPC_CHALLENGES);
+    c={ name:pick(NPC_NAMES), txt:ch.txt, color:'#FFD700', challenge:ch, done:false, t:0 };
   } else {
-    VIRAL.nextT-=dt;
-    if(VIRAL.nextT<=0){
-      const ev=pick(VIRAL_EVENTS); VIRAL.active=ev; VIRAL.t=ev.dur;
-      if(ev.id==='rizz') rizzStartScore=GAME.score;
-      floater(W/2,H*.18,'WAIT FOR IT...','#fff',26);
-      setTimeout(()=>{ floater(W/2,H*.28,ev.label,ev.color,30); addShake(18); ev.apply(); },900);
-      VIRAL.nextT=rand(18,30);
-    }
+    c={ name:pick(NPC_NAMES), txt:pick(NPC_REACT), color:'#fff', done:false, t:0 };
   }
-}
-function displayScore(){ return rizzMul===2? GAME.score+(GAME.score-rizzStartScore) : GAME.score; }
-function viralIs(id){ return VIRAL.active&&VIRAL.active.id===id; }
-function drawViralOverlay(){
-  if(!VIRAL.active) return;
-  const ev=VIRAL.active;
-  ctx.globalAlpha=0.18; ctx.fillStyle=ev.color; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
-  if(ev.id==='ohio'){ ctx.globalCompositeOperation='difference'; ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H); ctx.globalCompositeOperation='source-over'; }
+  COMMENTS.push(c);
+  if(COMMENTS.length>7) COMMENTS.shift();
 }
 function drawComments(){
-  ctx.textAlign='left'; ctx.textBaseline='bottom';
-  let y=H-8;
-  for(const c of COMMENTS.slice(-6).reverse()){
-    const a=clamp(c.ttl/1.5,0,1);
-    ctx.globalAlpha=a;
-    ctx.font='700 13px Trebuchet MS';
-    const chal=!!c.challenge;
-    const line=c.name+': '+c.txt;
-    const tw=ctx.measureText(line).width;
-    ctx.fillStyle='rgba(0,0,0,0.5)'; roundRect(ctx,8,y-18,tw+14,22,6); ctx.fill();
-    ctx.fillStyle=chal?'#FFD700':'#fff'; ctx.fillText(line,15,y-4);
-    y-=26;
+  ctx.save();
+  ctx.textAlign='left'; ctx.textBaseline='top';
+  for(let i=0;i<COMMENTS.length;i++){
+    const c=COMMENTS[i];
+    c.t+=0.016;
+    if(c.challenge && !c.done && c.challenge.check()){
+      c.done=true;
+      GAME.score+=c.challenge.reward;
+      floater(W/2,H*0.45,'+'+c.challenge.reward+' CHALLENGE WON','#FFD700',24);
+      Audio.coin();
+      c.txt+=' ✓';
+    }
+    const y=H*0.56 + i*28;
+    const alpha=clamp(9-c.t,0,1);
+    ctx.globalAlpha=alpha*0.85;
+    ctx.font='bold 11px Impact';
+    const w = ctx.measureText(c.name+': '+c.txt).width + 16;
+    ctx.fillStyle='rgba(0,0,0,0.65)';
+    roundRect(ctx, 8, y, w, 24, 8); ctx.fill();
+    ctx.strokeStyle=c.color; ctx.lineWidth=1.5; roundRect(ctx,8,y,w,24,8); ctx.stroke();
+    ctx.fillStyle=c.color;
+    ctx.fillText(c.name+': '+c.txt, 14, y+6);
   }
   ctx.globalAlpha=1;
-  // view counter + live badge
-  const vc=Math.floor(viewCount).toLocaleString();
-  ctx.font='700 12px Trebuchet MS'; ctx.textAlign='right';
-  ctx.fillStyle='rgba(0,0,0,0.5)'; roundRect(ctx,W-122,44,114,24,6); ctx.fill();
-  ctx.fillStyle='#FF2D95'; ctx.fillText(vc+' views',W-14,60);
-  ctx.fillStyle='rgba(255,255,255,0.7)'; ctx.fillText('● LIVE',W-14,74);
-  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  // view counter + LIVE badge (bottom-right)
+  ctx.textAlign='right'; ctx.textBaseline='bottom';
+  ctx.fillStyle='#ff3030'; ctx.font='900 11px Impact';
+  ctx.fillText('● LIVE', W-10, H-14);
+  ctx.fillStyle='#fff'; ctx.font='bold 12px Impact';
+  ctx.fillText('👁 '+viewCount, W-10, H-2);
+  ctx.restore();
 }
-function scoreMul(){ return rizzMul; }
+function displayScore(){ return GAME.score * rizzMul; }
 
 // ============================================================
 // GAME STATE
@@ -996,13 +1046,13 @@ function showMutator(){
   setTimeout(()=>el.classList.remove('show'), 2500);
 }
 
-function GAME.lose(reason){ GAME.loseReason=reason; endRound(); }
-function GAME.win(reason){ GAME.winReason=reason; endRound(); }
-function GAME.loseLife(reason){
+GAME.lose = function(reason){ GAME.loseReason=reason; endRound(); };
+GAME.win = function(reason){ GAME.winReason=reason; endRound(); };
+GAME.loseLife = function(reason){
   GAME.lives--;
   if(GAME.lives<=0){ GAME.lose(reason); }
   else { floater(W/2,H/2,'-1 LIFE','#ff5577',28); addShake(10); Audio.fail(); }
-}
+};
 
 function endRound(){
   GAME.state='result';
