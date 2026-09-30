@@ -1,45 +1,34 @@
-# MEME ARENA
+# GOOFER GAUNTLET
 
-Five chaotic, switchable micro-games in one HTML5 file — starring a fully ORIGINAL cast of confident idiots. Looping chiptune braindance beats, beat-synced visuals, Impact-font captions, zero dependencies, fully English, works on phone and desktop. No borrowed memes, no borrowed IP — every character and every slang word here was invented for this game.
+A brainrot micro-game collection built to be **clip-worthy**. Memes are not decoration here — they are the mechanics. Each round mutates the rules, NPC comments heckle you in real time, and viral events flip the game mid-run. Share your result card. Sound on. No dependencies. Fully English. Works on phone and desktop.
 
 **Play now:** https://sixboy666.github.io/meme-arena/
 
-## The Cast (100% original)
+## Memes as mechanics (not decoration)
 
-| Character | Bio |
-|-----------|-----|
-| **GOOBER** | professional orb. does nothing. does it perfectly. |
-| **SIR NUGGET** | crispy. classy. legally a snack. |
-| **SCOOPS** | melting since tuesday. still fine. |
-| **GILBERT** | pigeon. broker. buys every dip. |
-| **GERALD** | the croissant moon. silent. powerful. buttery. |
-| **THE HATER** | gray. grumpy. says nah. do not bonk. |
+- **Mutators** — every round randomly applies a meme rule-shift: BIG GOOFER MODE, ICE FLOOR, GRAVITY FLIP, DOUBLE SUN, DIAMOND HANDS, SHORT SQUEEZE, NO HATERS (TRUST ME BRO)... the rule you get changes how you play.
+- **Mid-run viral events** — "WAIT FOR IT..." then OHIO GRAVITY FLIP, RIZZ OVERLOAD (2x points), COMMENT RAID, or RULES JUST CHANGED (new mutator swapped in). Every 15-30 seconds something absurd happens.
+- **Live NPC comment stream** — fake viewers heckle you in real time (FIRST, RATIO, SKIBIDI, SUS...). Gold comments are *challenges* — fulfill them for bonus points.
+- **Fake view counter + LIVE badge** — the round feels like a live stream. Views spike during viral events.
+- **Score caption cycling** — your score is labeled RIZZ COUNT, VIBES, OHIO METER, DIGNITY LEFT, GLUTEN GAINED... it changes every few seconds.
+- **Shareable result card** — end-of-round rank card (GIGAGOOF, CERTIFIED GOOFER, CRINGE...) downloads as a PNG, ready to post.
 
 ## Worlds
 
-| # | World | Vibe |
-|---|-------|------|
-| 1 | GOOBER SMASH | Bonk rising goobers, hunt the rare GOLDEN CHADLET (+50), never bonk THE HATER |
-| 2 | NUGGET RUN | Double-jump THE HATERS across a neon void with a golden crumb trail, 3 lives |
-| 3 | MELTDOWN | Tap the furious heat spirits, keep SCOOPS solid-ish on the FROST meter |
-| 4 | BAO DROP | Catch BAO BAO buns and the GOLDEN BAO (+25) in the takeout box, fear the chili |
-| 5 | BREAD COIN | Tap green dips, dodge red SELLs, GILBERT whispers "bread.", baguette rocket flies to GERALD |
-
-## Features
-
-- Looping procedural chiptune music, a different catchy melody per world (WebAudio, no files)
-- Beat-synced visuals: the sky goober, GERALD, bubbles and the score all pulse to the music
-- Original slang lexicon in the scrolling ticker: MAXIMUM GOOB, LOAF LOCKED, SNACKCIDENT, BIG BAO ENERGY, CRUMB UP, DERPENED, GIGAGOOF...
-- Combo milestones: x5 CERTIFIED GOOFER, x10 MAXIMUM GOOB, x15 GIGAGOOF STATUS, x20 BRAIN OFF. VIBES ON.
-- End-of-round ranks from LIL GOOF to MAXIMUM GOOB, with unhinged flavor text
-- Combo scoring, lives, survival timer, per-world best scores saved locally on your device
+| # | World | Vibe | Mutators |
+|---|-------|------|----------|
+| 1 | GOOBER SMASH | Bonk goobers, never THE HATER | BIG GOOFER MODE, HATER DISGUISE, TRIPLE TROUBLE, NO HATERS |
+| 2 | NUGGET RUN | Double-jump crumbs, survive | ICE FLOOR, GRAVITY FLIP, SPEED DEMON, CRUMB RAIN |
+| 3 | MELTDOWN | Tap heat spirits, keep SCOOPS solid | DOUBLE SUN, HEAT SPIRIT STAMPEDE, CONE OF DOOM, RAIN BLESSED |
+| 4 | BAO DROP | Catch buns, dodge chili bombs | GOLDEN RUSH, HATER IN DISGUISE, MAGNETIC BOX, CHILI SWARM |
+| 5 | BREAD COIN | Tap green, dodge red, to the moon | VOLATILITY, DIAMOND HANDS, SHORT SQUEEZE, PANIC MODE |
 
 ## Controls
 
 - **Phone:** tap / drag
-- **PC:** mouse, Space / Up to jump, arrows or A/D to move
-- Switch worlds anytime with the chips at the bottom
+- **PC:** click, Space / Up to jump, arrows / A-D to move
+- Switch worlds with the chips at the bottom
 
 ## Run
 
-Open `index.html` in any modern browser. That's it — no server, no install. Sound on for full brainrot.
+Open `index.html` in any modern browser. No server, no install.
