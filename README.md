@@ -1,23 +1,22 @@
 # GOOFER GAUNTLET
 
-A brainrot micro-game collection built to be **clip-worthy**. Memes are not decoration here — they are the mechanics. Each round mutates the rules, NPC comments heckle you in real time, and viral events flip the game mid-run. Share your result card. Sound on. No dependencies. Fully English. Works on phone and desktop.
+A brainrot micro-game collection built to be **clip-worthy**. Memes are not decoration — they are the mechanics. Every round mutates the rules. Share your result card. Sound on. No dependencies. Fully English. Works on phone and desktop.
 
 **Play now:** https://sixboy666.github.io/meme-arena/
 
-## Memes as mechanics (not decoration)
+## How it works
 
-- **Mutators** — every round randomly applies a meme rule-shift: BIG GOOFER MODE, ICE FLOOR, GRAVITY FLIP, DOUBLE SUN, DIAMOND HANDS, SHORT SQUEEZE, NO HATERS (TRUST ME BRO)... the rule you get changes how you play.
-- **Mid-run viral events** — "WAIT FOR IT..." then OHIO GRAVITY FLIP, RIZZ OVERLOAD (2x points), COMMENT RAID, or RULES JUST CHANGED (new mutator swapped in). Every 15-30 seconds something absurd happens.
-- **Live NPC comment stream** — fake viewers heckle you in real time (FIRST, RATIO, SKIBIDI, SUS...). Gold comments are *challenges* — fulfill them for bonus points.
-- **Fake view counter + LIVE badge** — the round feels like a live stream. Views spike during viral events.
-- **Score caption cycling** — your score is labeled RIZZ COUNT, VIBES, OHIO METER, DIGNITY LEFT, GLUTEN GAINED... it changes every few seconds.
-- **Shareable result card** — end-of-round rank card (GIGAGOOF, CERTIFIED GOOFER, CRINGE...) downloads as a PNG, ready to post.
+- **5 absurd micro-worlds**, each a 10–30 second loop with its own color scheme.
+- **Random mutators** every round — BIG GOOFER MODE, GRAVITY FLIP, DOUBLE SUN, SUS BUNS, PANIC MODE... the rule you get changes how you play. Failures are absurd, not frustrating.
+- **Shareable result card** — end-of-round rank card (GIGAGOOF, CERTIFIED GOOFER, CRINGE...) downloads as a PNG, ready to post. Text is generated from your actual run.
+- **Procedural WebAudio** — chiptune beat, bonks, jumps, fails, combos. No audio files.
+- **Best scores** saved per scene on your device.
 
 ## Worlds
 
 | # | World | Vibe | Mutators |
 |---|-------|------|----------|
-| 1 | GOOBER SMASH | Bonk goobers, never THE HATER | BIG GOOFER MODE, HATER DISGUISE, TRIPLE TROUBLE, NO HATERS |
+| 1 | GOOBER SMASH | Bonk goobers, never THE HATER | BIG GOOFER MODE, HATER DISGUISE, TRIPLE TROUBLE, NO HATERS (TRUST ME BRO) |
 | 2 | NUGGET RUN | Double-jump crumbs, survive | ICE FLOOR, GRAVITY FLIP, SPEED DEMON, CRUMB RAIN |
 | 3 | MELTDOWN | Tap heat spirits, keep SCOOPS solid | DOUBLE SUN, HEAT SPIRIT STAMPEDE, CONE OF DOOM, RAIN BLESSED |
 | 4 | BAO DROP | Catch buns, dodge chili bombs | BUN RAIN, CHILI STORM, INVISIBLE BUNS, SUS BUNS |
@@ -27,7 +26,7 @@ A brainrot micro-game collection built to be **clip-worthy**. Memes are not deco
 
 - **Phone:** tap / drag
 - **PC:** click, Space / Up to jump, arrows / A-D to move
-- Switch worlds with the chips at the bottom
+- Switch worlds with the chips at the bottom (only on cover or after a round)
 
 ## Run
 
