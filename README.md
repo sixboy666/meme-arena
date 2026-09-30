@@ -20,7 +20,7 @@ A brainrot micro-game collection built to be **clip-worthy**. Memes are not deco
 | 1 | GOOBER SMASH | Bonk goobers, never THE HATER | BIG GOOFER MODE, HATER DISGUISE, TRIPLE TROUBLE, NO HATERS |
 | 2 | NUGGET RUN | Double-jump crumbs, survive | ICE FLOOR, GRAVITY FLIP, SPEED DEMON, CRUMB RAIN |
 | 3 | MELTDOWN | Tap heat spirits, keep SCOOPS solid | DOUBLE SUN, HEAT SPIRIT STAMPEDE, CONE OF DOOM, RAIN BLESSED |
-| 4 | BAO DROP | Catch buns, dodge chili bombs | GOLDEN RUSH, HATER IN DISGUISE, MAGNETIC BOX, CHILI SWARM |
+| 4 | BAO DROP | Catch buns, dodge chili bombs | BUN RAIN, CHILI STORM, INVISIBLE BUNS, SUS BUNS |
 | 5 | BREAD COIN | Tap green, dodge red, to the moon | VOLATILITY, DIAMOND HANDS, SHORT SQUEEZE, PANIC MODE |
 
 ## Controls
