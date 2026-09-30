@@ -24,9 +24,10 @@ A brainrot micro-game collection built to be **clip-worthy**. Memes are not deco
 
 ## Controls
 
-- **Phone:** tap / drag
-- **PC:** click, Space / Up to jump, arrows / A-D to move
-- Switch worlds with the chips at the bottom (only on cover or after a round)
+- **Phone:** tap / drag. Switch games any time with the chips at the bottom (even mid-round). ❚❚ pauses, 🔊 mutes.
+- **PC:** mouse, Space / Up to jump, arrows / A-D to move
+- **Hotkeys:** `1`–`5` switch games instantly, `P` pause, `M` mute, `Esc` back to cover
+- HOME chip returns to the cover; switching mid-round starts a fresh round with a new random mutator
 
 ## Run
 
