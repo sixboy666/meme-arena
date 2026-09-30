@@ -13,6 +13,8 @@
   #hud{position:fixed;top:0;left:0;right:0;padding:calc(8px + env(safe-area-inset-top)) 64px 8px 12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:5;font-size:18px;text-shadow:2px 2px 0 #000}
   #hud .left,#hud .right{display:flex;gap:10px;align-items:center}
   .chip{background:rgba(0,0,0,.55);padding:6px 12px;border-radius:20px;border:2px solid rgba(255,255,255,.25);white-space:nowrap}
+  .chip.urgent{color:#fff;background:#d11;animation:urgpulse .5s infinite alternate;border-color:#ff8a9a}
+  @keyframes urgpulse{from{transform:scale(1)}to{transform:scale(1.18)}}
   #mutator{position:fixed;top:calc(52px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:5px 16px;border-radius:14px;font-size:15px;z-index:6;display:none;letter-spacing:.5px;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
   #mutator.show{display:block;animation:pop .3s ease}
   @keyframes pop{0%{transform:translateX(-50%) scale(.4);opacity:0}100%{transform:translateX(-50%) scale(1);opacity:1}}
@@ -147,6 +149,7 @@ const Audio = (()=>{
     fail:()=>{ensure(); tone(300,0.18,'square',0.35,-150); setTimeout(()=>tone(180,0.25,'square',0.35,-80),120); noise(0.2,0.2);},
     win:()=>{ensure(); [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.12,'square',0.3),i*90));},
     combo:(n)=>{ensure(); tone(440+n*40,0.06,'square',0.25);},
+    milestone:()=>{ensure(); [523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.09,'square',0.26),i*55));},
     tick:()=>{ensure(); tone(1200,0.03,'square',0.15);},
     whoosh:()=>{ensure(); noise(0.2,0.2);},
     beatTimer:null, beatStep:0,
@@ -192,10 +195,11 @@ function burst(x,y,color,n,speed){
     particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1,color,size:rand(2,6),rot:rand(0,Math.PI*2),vr:rand(-0.3,0.3)});
   }
 }
-function updateParticles(){
+function updateParticles(dt){
+  const k=dt===undefined?1:dt*60;
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
-    p.x+=p.vx; p.y+=p.vy; p.vy+=0.15; p.vx*=0.98; p.rot+=p.vr; p.life-=0.025;
+    p.x+=p.vx*k; p.y+=p.vy*k; p.vy+=0.15*k; p.vx*=Math.pow(0.98,k); p.rot+=p.vr*k; p.life-=0.025*k;
     if(p.life<=0) particles.splice(i,1);
   }
 }
@@ -217,8 +221,9 @@ function floater(x,y,text,color,size){
   color=color||'#fff'; size=size||22;
   floaters.push({x,y,text,color,size,life:1,vy:-1.5});
 }
-function updateFloaters(){
-  for(let i=floaters.length-1;i>=0;i--){const f=floaters[i];f.y+=f.vy;f.vy*=0.96;f.life-=0.02;if(f.life<=0)floaters.splice(i,1);}
+function updateFloaters(dt){
+  const k=dt===undefined?1:dt*60;
+  for(let i=floaters.length-1;i>=0;i--){const f=floaters[i];f.y+=f.vy*k;f.vy*=Math.pow(0.96,k);f.life-=0.02*k;if(f.life<=0)floaters.splice(i,1);}
 }
 function drawFloaters(){
   ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -231,16 +236,114 @@ function drawFloaters(){
   ctx.globalAlpha=1;
 }
 
+// ---------- juice FX ----------
+const fx = { flash:0, flashRGB:'255,255,255', hitStop:0, callouts:[], ripples:[], introT:0, hintT:0 };
+const COMBO_TIERS = [
+  null,
+  {t:'NICE', c:'#A3E635'},
+  {t:'SHEESH', c:'#00E5FF'},
+  {t:'GOOF MODE', c:'#FF2D95'},
+  {t:'UNHINGED', c:'#FFB300'},
+  {t:'GIGAGOOF', c:'#FFD700'},
+  {t:'BRAIN OFF. VIBES ON.', c:'#fff'}
+];
+function flashScreen(rgb,a){ fx.flashRGB=rgb; fx.flash=Math.max(fx.flash,a); }
+function hitFx(x,y,color){
+  fx.hitStop=Math.max(fx.hitStop,0.05);
+  flashScreen('255,255,255',0.18);
+  if(x!==undefined) burst(x,y,color,10,3.5);
+  if(navigator.vibrate) navigator.vibrate(10);
+}
+function dmgFx(x,y){
+  fx.hitStop=Math.max(fx.hitStop,0.09);
+  flashScreen('255,45,80',0.32);
+  addShake(15);
+  if(x!==undefined) burst(x,y,'#ff3355',22,6);
+  if(navigator.vibrate) navigator.vibrate([30,35,30]);
+}
+function callout(text,color){
+  fx.callouts.push({text,color,t:1.15,max:1.15});
+  Audio.milestone();
+  if(navigator.vibrate) navigator.vibrate(28);
+}
+function ripple(x,y){ fx.ripples.push({x,y,t:0,max:0.45}); }
+function updateFx(dt){
+  if(fx.flash>0) fx.flash=Math.max(0,fx.flash-dt*2.2);
+  for(let i=fx.callouts.length-1;i>=0;i--){fx.callouts[i].t-=dt; if(fx.callouts[i].t<=0)fx.callouts.splice(i,1);}
+  for(let i=fx.ripples.length-1;i>=0;i--){fx.ripples[i].t+=dt; if(fx.ripples[i].t>=fx.ripples[i].max)fx.ripples.splice(i,1);}
+  if(fx.introT>0) fx.introT-=dt;
+  if(fx.hintT>0) fx.hintT-=dt;
+}
+function drawFx(){
+  // tap ripples
+  for(const rp of fx.ripples){
+    const k=rp.t/rp.max;
+    ctx.save(); ctx.globalAlpha=(1-k)*0.55;
+    ctx.strokeStyle='#fff'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(rp.x,rp.y,8+k*34,0,Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
+  // vignette
+  const vg=ctx.createRadialGradient(W/2,H*0.45,H*0.4,W/2,H*0.5,H*0.95);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.32)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+  // combo callouts (big Impact center pop)
+  for(const c of fx.callouts){
+    const k=1-c.t/c.max;
+    const pop = k<0.15 ? k/0.15*1.25 : 1.25 - Math.max(0,k-0.15)*0.25;
+    ctx.save();
+    ctx.translate(W/2,H*0.32);
+    ctx.scale(pop,pop);
+    ctx.globalAlpha=clamp(c.t/0.35,0,1);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='900 52px Impact, Arial Black';
+    ctx.lineWidth=9; ctx.strokeStyle='#000';
+    ctx.strokeText(c.text,0,0);
+    ctx.fillStyle=c.color; ctx.fillText(c.text,0,0);
+    ctx.restore();
+  }
+  ctx.globalAlpha=1;
+  // screen flash
+  if(fx.flash>0){
+    ctx.fillStyle='rgba('+fx.flashRGB+','+fx.flash+')';
+    ctx.fillRect(0,0,W,H);
+  }
+  // round intro banner
+  if(fx.introT>0 && GAME.state==='playing'){
+    const a=fx.introT>0.8?(1.3-fx.introT)/0.5:clamp(fx.introT/0.8,0,1);
+    ctx.save(); ctx.globalAlpha=a; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#fff'; ctx.font='900 40px Impact, Arial Black';
+    ctx.lineWidth=7; ctx.strokeStyle='#000';
+    ctx.strokeText(scene().name,W/2,H*0.2); ctx.fillText(scene().name,W/2,H*0.2);
+    if(GAME.mutator){
+      ctx.font='bold 16px Impact'; ctx.fillStyle=scene().colors.accent;
+      ctx.strokeText(GAME.mutator,W/2,H*0.2+38); ctx.fillText(GAME.mutator,W/2,H*0.2+38);
+    }
+    ctx.restore();
+  }
+  // first-seconds hint
+  if(fx.hintT>0 && GAME.state==='playing' && scene().hint){
+    const pulse=0.75+Math.sin(performance.now()/180)*0.25;
+    ctx.save(); ctx.globalAlpha=clamp(fx.hintT,0,1)*pulse;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='bold 19px Impact, Arial Black';
+    ctx.lineWidth=5; ctx.strokeStyle='#000';
+    ctx.strokeText(scene().hint,W/2,H*0.8); ctx.fillStyle='#fff'; ctx.fillText(scene().hint,W/2,H*0.8);
+    ctx.restore();
+  }
+}
+
 const SCENES = [];
 
 SCENES.push({
   id:'goober', name:'GOOBER SMASH', short:'GOOBER',
   colors:{bg1:'#0a1a05',bg2:'#1a2e0a',accent:'#A3E635',accent2:'#16A34A',ink:'#fff'},
   flags:{duration:20, lives:0},
+  hint:'BONK THE GREEN ONES — NEVER THE GRAY HATER',
   mutators:['BIG GOOFER MODE','HATER DISGUISE','TRIPLE TROUBLE','NO HATERS (TRUST ME BRO)'],
   state:{},
   reset(){
-    this.state={holes:[], goobers:[], spawnT:0, combo:0, comboT:0, haterRate:0.18, maxCombo:0, bonked:0, bigMode:false, disguise:false};
+    this.state={holes:[], goobers:[], spawnT:0.4, combo:0, comboT:0, haterRate:0.18, maxCombo:0, bonked:0, bigMode:false, disguise:false, triple:false, elapsed:0};
     const cols=3, rows=3;
     const cw=W/cols, ch=(H-200)/rows;
     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
@@ -249,17 +352,26 @@ SCENES.push({
     const m = GAME.mutator;
     if(m==='BIG GOOFER MODE') this.state.bigMode=true;
     if(m==='HATER DISGUISE') this.state.disguise=true;
+    if(m==='TRIPLE TROUBLE') this.state.triple=true;
     if(m==='NO HATERS (TRUST ME BRO)') this.state.haterRate=0.35;
   },
   update(dt){
     const s=this.state;
+    s.elapsed+=dt;
+    // haters show up more as the round goes on
+    s.haterRate = (GAME.mutator==='NO HATERS (TRUST ME BRO)'?0.35:0.16) + Math.min(0.14,s.elapsed*0.008);
     s.spawnT-=dt;
+    const ramp=1-clamp(s.elapsed/22,0,0.4);
     if(s.spawnT<=0 && s.goobers.length<6){
-      s.spawnT=rand(0.4,0.9);
-      const h=pick(s.holes);
-      if(!s.goobers.find(g=>g.hole===h)){
-        const isHater = Math.random()<s.haterRate;
-        s.goobers.push({hole:h,x:h.x,y:h.y+h.r,ty:h.y-h.r*0.3,life:rand(1.2,2.2),max:2.2,hater:isHater,disguise:s.disguise&&isHater,big:s.bigMode&&Math.random()<0.3,hit:false});
+      s.spawnT=rand(0.4,0.9)*ramp;
+      const freeHoles=s.holes.filter(h=>!s.goobers.find(g=>g.hole===h));
+      if(freeHoles.length){
+        const batch = s.triple ? Math.min(3,freeHoles.length) : 1;
+        for(let k=0;k<batch;k++){
+          const h=pick(freeHoles); freeHoles.splice(freeHoles.indexOf(h),1);
+          const isHater = Math.random()<s.haterRate;
+          s.goobers.push({hole:h,x:h.x,y:h.y+h.r,ty:h.y-h.r*0.3,life:rand(1.2,2.2),max:2.2,hater:isHater,disguise:s.disguise&&isHater,big:s.bigMode&&Math.random()<0.3,hit:false});
+        }
       }
     }
     for(let i=s.goobers.length-1;i>=0;i--){
@@ -319,16 +431,18 @@ SCENES.push({
       if(Math.hypot(x-g.x,y-g.y)<r){
         if(g.hater){
           Audio.fail(); addShake(18);
-          burst(g.x,g.y,'#ff3355',30,7);
-          floater(g.x,g.y-30,'YOU BONKED A HATER','#ff5577',18);
+          dmgFx(g.x,g.y);
+          floater(g.x,g.y-30,pick(['YOU BONKED A HATER','WRONG ORB BRO','HE BONKED BACK']),'#ff5577',18);
           GAME.lose('BONKED A HATER');
           return;
         }
         s.combo++; s.comboT=1.2; s.maxCombo=Math.max(s.maxCombo,s.combo); s.bonked++;
         const pts = Math.round((g.big?50:10)*(1+Math.floor(s.combo/5)*0.5));
         GAME.score+=pts;
-        Audio.combo(s.combo); burst(g.x,g.y,g.big?'#FFD700':'#A3E635',g.big?25:14);
+        Audio.combo(s.combo);
+        hitFx(g.x,g.y,g.big?'#FFD700':'#A3E635');
         floater(g.x,g.y-20,'+'+pts,g.big?'#FFD700':'#A3E635',20);
+        if(g.big) floater(g.x,g.y-48,'RARE GOOF!','#FFD700',16);
         s.goobers.splice(i,1);
         return;
       }
@@ -336,9 +450,9 @@ SCENES.push({
   },
   result(){
     const s=this.state;
-    if(GAME.loseReason) return {title:'BONKED A HATER 💀', sub:'HE BONKED BACK.', stat:''+s.bonked+' BONKS • x'+s.maxCombo+' COMBO', rank:'CRINGE', color:'#ff3355'};
-    if(s.bonked>=40) return {title:'GIGAGOOF STATUS', sub:'YOU BONKED TOO HARD.', stat:''+s.bonked+' BONKS • x'+s.maxCombo, rank:'GIGAGOOF', color:'#A3E635'};
-    if(s.bonked>=25) return {title:'CERTIFIED GOOFER', sub:'BONKS INBOUND.', stat:''+s.bonked+' BONKS • x'+s.maxCombo, rank:'GOOFER', color:'#16A34A'};
+    if(GAME.loseReason) return {title:pick(['BONKED A HATER 💀','WRONG ORB BRO 💀','HE BONKED BACK 💀']), sub:pick(['HE BONKED BACK.','THAT ONE WAS NOT GREEN.','THE HATER REMEMBERS YOU.']), stat:''+s.bonked+' BONKS • x'+s.maxCombo+' COMBO', rank:'CRINGE', color:'#ff3355'};
+    if(s.bonked>=40) return {title:'GIGAGOOF STATUS', sub:pick(['YOU BONKED TOO HARD.','THE HOLES FEAR YOU.','UNHINGED BONK ENERGY.']), stat:''+s.bonked+' BONKS • x'+s.maxCombo, rank:'GIGAGOOF', color:'#A3E635'};
+    if(s.bonked>=25) return {title:'CERTIFIED GOOFER', sub:pick(['BONKS INBOUND.','SOLID GOOF ENERGY.','RESPECT THE BONK.']), stat:''+s.bonked+' BONKS • x'+s.maxCombo, rank:'GOOFER', color:'#16A34A'};
     if(s.bonked>=10) return {title:'SLIGHTLY TOASTED', sub:'A FEW GOOD BONKS.', stat:''+s.bonked+' BONKS', rank:'TOASTED', color:'#FFB300'};
     return {title:'LIL GOOF', sub:'BONK MORE.', stat:''+s.bonked+' BONKS', rank:'GOOF', color:'#888'};
   }
@@ -348,19 +462,22 @@ SCENES.push({
   id:'nugget', name:'NUGGET RUN', short:'NUGGET',
   colors:{bg1:'#1a0030',bg2:'#2d0a4e',accent:'#FF2D95',accent2:'#00E5FF',ink:'#fff'},
   flags:{duration:0, lives:3, survival:true},
+  hint:'TAP / SPACE TO JUMP — YOU GET TWO JUMPS',
   mutators:['ICE FLOOR','GRAVITY FLIP','SPEED DEMON','CRUMB RAIN'],
   state:{},
   reset(){
     this.state={
       nugget:{x:W*0.25,y:H*0.6,vy:0,jumps:0,r:26,onGround:true},
-      obstacles:[], spawnT:1, speed:260, dist:0, gold:0, groundY:H*0.7,
+      obstacles:[], spawnT:1, baseSpeed:260, speed:260, dist:0, gold:0, groundY:H*0.7,
       gravity:1400, ice:GAME.mutator==='ICE FLOOR', flip:GAME.mutator==='GRAVITY FLIP',
       fast:GAME.mutator==='SPEED DEMON', rain:GAME.mutator==='CRUMB RAIN'
     };
-    if(this.state.fast) this.state.speed*=1.5;
+    if(this.state.fast){ this.state.baseSpeed*=1.5; this.state.speed=this.state.baseSpeed; }
   },
   update(dt){
     const s=this.state;
+    // world speeds up the further SIR NUGGET runs
+    s.speed = s.baseSpeed*(1+clamp(s.dist/8000,0,0.55));
     const g = s.flip? -s.gravity : s.gravity;
     s.nugget.vy += g*dt;
     s.nugget.y += s.nugget.vy*dt;
@@ -385,11 +502,11 @@ SCENES.push({
       if(o.x<nx+nr && o.x+o.w>nx-nr && o.y<ny+nr && o.y+o.h>ny-nr){
         if(o.gold){
           s.gold++; GAME.score+=50; Audio.coin();
-          burst(o.x,o.y,'#FFD700',18); floater(o.x,o.y-20,'+50','#FFD700',20);
+          hitFx(o.x,o.y,'#FFD700'); floater(o.x,o.y-20,pick(['+50','GOLD CRUMB!','STONKS']),'#FFD700',20);
           s.obstacles.splice(i,1); continue;
         } else {
           Audio.fail(); addShake(16);
-          burst(o.x,o.y,'#ff3355',24,6);
+          dmgFx(o.x,o.y);
           GAME.lose('TRIPPED ON A CRUMB');
           return;
         }
@@ -439,14 +556,15 @@ SCENES.push({
       s.nugget.vy = s.flip? 600 : -600;
       s.nugget.jumps++; s.nugget.onGround=false;
       Audio.jump();
+      if(s.nugget.jumps===2) burst(s.nugget.x,s.nugget.y+10,'#00E5FF',8,2.5);
     }
   },
   onKey(k){ if(k===' '||k==='ArrowUp'||k==='w'||k==='W') this.onTap(); },
   result(){
     const s=this.state;
     const d=Math.floor(s.dist/10);
-    if(GAME.loseReason) return {title:'TRIPPED ON A CRUMB 💀', sub:'ONE JOB. JUST JUMP.', stat:d+'m • '+s.gold+' GOLD CRUMBS', rank:'CRINGE', color:'#ff3355'};
-    if(d>=2000) return {title:'LEET STATUS', sub:'NUGGET WENT DISTANCE.', stat:d+'m • '+s.gold+' GOLD', rank:'GIGAGOOF', color:'#00E5FF'};
+    if(GAME.loseReason) return {title:pick(['TRIPPED ON A CRUMB 💀','CRUMB CLAIMED YOU 💀','JUMP? NEVER HEARD OF IT 💀']), sub:pick(['ONE JOB. JUST JUMP.','THE CRUMB IS NOT YOUR FRIEND.','SIR NUGGET IS DOWN.']), stat:d+'m • '+s.gold+' GOLD CRUMBS', rank:'CRINGE', color:'#ff3355'};
+    if(d>=2000) return {title:'LEET STATUS', sub:pick(['NUGGET WENT DISTANCE.','UNSTOPPABLE POULTRY.','THE CRUMBS COULD NOT.']), stat:d+'m • '+s.gold+' GOLD', rank:'GIGAGOOF', color:'#00E5FF'};
     if(d>=1000) return {title:'CRUMB UP', sub:'STILL RUNNING.', stat:d+'m', rank:'GOOFER', color:'#FF2D95'};
     if(d>=300) return {title:'NUGGET IN MOTION', sub:'DECENT STRIDE.', stat:d+'m', rank:'TOASTED', color:'#FFB300'};
     return {title:'SHORT STRIDE', sub:'RUN MORE.', stat:d+'m', rank:'GOOF', color:'#888'};
@@ -457,6 +575,7 @@ SCENES.push({
   id:'melt', name:'MELTDOWN', short:'MELT',
   colors:{bg1:'#2a0a00',bg2:'#5a1a00',accent:'#FF6B35',accent2:'#FFB300',ink:'#fff'},
   flags:{duration:0, lives:0, survival:true},
+  hint:'TAP THE FIRE SPIRITS — DO NOT TAP SCOOPS',
   mutators:['DOUBLE SUN','HEAT SPIRIT STAMPEDE','CONE OF DOOM','RAIN BLESSED'],
   state:{},
   reset(){
@@ -466,23 +585,27 @@ SCENES.push({
       sunX:W*0.8, sunY:H*0.15, sunR:50, sunAng:0,
       clouds:[], doubleSun:GAME.mutator==='DOUBLE SUN',
       stampede:GAME.mutator==='HEAT SPIRIT STAMPEDE',
-      rainBlessed:GAME.mutator==='RAIN BLESSED'
+      rainBlessed:GAME.mutator==='RAIN BLESSED',
+      coneDoom:GAME.mutator==='CONE OF DOOM',
+      cone:{timer:3, phase:'idle', x:0, y:0, t:0, r:52}
     };
     if(this.state.rainBlessed) this.state.frost=130;
   },
   update(dt){
     const s=this.state; s.t+=dt;
     s.sunAng+=dt*0.5;
-    const frostDrain = (s.doubleSun? 8:4) * dt;
+    // the sun gets angrier over time
+    const heat=1+clamp(s.t/45,0,0.9);
+    const frostDrain = (s.doubleSun? 8:4) * heat * dt;
     s.frost -= frostDrain;
-    if(s.frost<=0){ Audio.fail(); addShake(14); GAME.lose('MELTED INTO A PUDDLE'); return; }
+    if(s.frost<=0){ Audio.fail(); addShake(14); dmgFx(s.scoops.x,s.scoops.y); GAME.lose('MELTED INTO A PUDDLE'); return; }
     s.scoops.melty = clamp(1-s.frost/100,0,1);
     s.spawnT-=dt;
     const rate = s.stampede?0.5:1.2;
     if(s.spawnT<=0){
       s.spawnT=rand(rate*0.5,rate);
       const side=Math.random()<0.5?-1:1;
-      s.spirits.push({x:side<0?-30:W+30, y:rand(H*0.2,H*0.7), vx:side*rand(60,120), r:18});
+      s.spirits.push({x:side<0?-30:W+30, y:rand(H*0.2,H*0.7), vx:side*rand(60,120)*heat, r:18});
       if(s.stampede && Math.random()<0.5){
         s.spirits.push({x:side<0?-30:W+30, y:rand(H*0.2,H*0.7), vx:side*rand(60,120), r:18});
       }
@@ -491,12 +614,25 @@ SCENES.push({
       s.clouds.push({x:-40, y:rand(40,H*0.3), vx:80, r:30});
     }
     for(let i=s.clouds.length-1;i>=0;i--){const c=s.clouds[i];c.x+=c.vx*dt; if(c.x>W+60)s.clouds.splice(i,1);}
+    // CONE OF DOOM: warn marker -> slam -> don't tap there
+    if(s.coneDoom){
+      const cn=s.cone;
+      if(cn.phase==='idle'){
+        cn.timer-=dt;
+        if(cn.timer<=0){ cn.phase='warn'; cn.t=0.8; cn.x=rand(60,W-60); cn.y=rand(H*0.22,H*0.68); }
+      } else if(cn.phase==='warn'){
+        cn.t-=dt;
+        if(cn.t<=0){ cn.phase='slam'; cn.t=0.4; Audio.whoosh(); addShake(10); flashScreen('255,150,40',0.22); }
+      } else {
+        cn.t-=dt;
+        if(cn.t<=0){ cn.phase='idle'; cn.timer=rand(2.6,4.6); }
+      }
+    }
     for(let i=s.spirits.length-1;i>=0;i--){
       const sp=s.spirits[i]; sp.x+=sp.vx*dt; sp.y+=Math.sin(s.t*3+i)*0.5;
       if(sp.x<-60||sp.x>W+60){s.spirits.splice(i,1);continue;}
       if(Math.hypot(sp.x-s.scoops.x,sp.y-s.scoops.y)<s.scoops.r+sp.r){
-        s.frost-=10; s.spirits.splice(i,1); Audio.fail(); addShake(8);
-        burst(sp.x,sp.y,'#FF6B35',12);
+        s.frost-=10; s.spirits.splice(i,1); Audio.fail(); dmgFx(sp.x,sp.y);
       }
     }
     GAME.score=Math.floor(s.t*10)+s.taps*20;
@@ -509,6 +645,17 @@ SCENES.push({
     ctx.fillStyle='#3D2817'; ctx.fillRect(0,H*0.75,W,H*0.25);
     this.drawScoops(s.scoops);
     for(const sp of s.spirits){this.drawSpirit(sp);}
+    if(s.coneDoom) this.drawCone(s.cone);
+    // FROST meter
+    const maxF=s.rainBlessed?150:100, fp=clamp(s.frost/maxF,0,1);
+    const bx=W*0.15, by=70, bw=W*0.7, bh=16;
+    ctx.fillStyle='rgba(0,0,0,0.6)'; roundRect(ctx,bx,by,bw,bh,8); ctx.fill();
+    const low=s.frost<30, blink=low&&Math.sin(s.t*8)>0;
+    ctx.fillStyle=blink?'#ff3355':(fp>0.4?'#6cf':'#FFB300');
+    roundRect(ctx,bx,by,bw*fp,bh,8); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.4)'; ctx.lineWidth=2; roundRect(ctx,bx,by,bw,bh,8); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='bold 12px Impact'; ctx.textAlign='center';
+    ctx.fillText('FROST',W/2,by+12);
   },
   drawSun(x,y,r){
     ctx.save(); ctx.translate(x,y);
@@ -556,29 +703,52 @@ SCENES.push({
     ctx.beginPath(); ctx.arc(-sp.r*0.3,-sp.r*0.1,3,0,Math.PI*2); ctx.arc(sp.r*0.3,-sp.r*0.1,3,0,Math.PI*2); ctx.fill();
     ctx.restore();
   },
+  drawCone(cn){
+    ctx.save(); ctx.translate(cn.x,cn.y);
+    if(cn.phase==='warn'){
+      const p=1+Math.sin(cn.t*14)*0.18;
+      ctx.scale(p,p);
+      ctx.strokeStyle='#ff3355'; ctx.lineWidth=4; ctx.setLineDash([8,6]);
+      ctx.beginPath(); ctx.arc(0,0,cn.r,0,Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#ff5577'; ctx.font='bold 15px Impact'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('⚠ CONE INCOMING',0,-cn.r-12);
+    } else if(cn.phase==='slam'){
+      ctx.fillStyle='#FF7A00'; ctx.strokeStyle='#000'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(-34,30); ctx.lineTo(34,30); ctx.lineTo(12,-34); ctx.lineTo(-12,-34); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#fff';
+      ctx.fillRect(-15,2,30,8); ctx.fillRect(-10,-16,20,7);
+      ctx.fillStyle='#FF7A00'; ctx.fillRect(-42,28,84,10); ctx.strokeRect(-42,28,84,10);
+    }
+    ctx.restore();
+  },
   onTap(x,y){
     const s=this.state;
+    if(s.coneDoom && s.cone.phase==='slam' && Math.hypot(x-s.cone.x,y-s.cone.y)<s.cone.r+18){
+      s.frost-=20; Audio.fail(); dmgFx(s.cone.x,s.cone.y);
+      floater(s.cone.x,s.cone.y-40,pick(['THE CONE GETS YOU','CONED 💀','DOOMED BY CONE']),'#ff5577',18);
+      return;
+    }
     for(let i=s.clouds.length-1;i>=0;i--){const c=s.clouds[i]; if(Math.hypot(x-c.x,y-c.y)<c.r*1.5){
-      s.frost=Math.min(150,s.frost+35); Audio.win(); burst(c.x,c.y,'#6cf',30); floater(c.x,c.y-20,'RAIN BLESSING','#6cf',18);
+      s.frost=Math.min(150,s.frost+35); Audio.win(); hitFx(c.x,c.y,'#6cf'); burst(c.x,c.y,'#6cf',26,6); floater(c.x,c.y-20,'RAIN BLESSING','#6cf',18);
       s.clouds.splice(i,1); return;
     }}
     if(Math.hypot(x-s.scoops.x,y-s.scoops.y)<s.scoops.r*1.3){
-      s.frost-=15; Audio.fail(); addShake(10);
-      floater(s.scoops.x,s.scoops.y-30,'STOP TAPPING SCOOPS','#ff5577',16);
-      burst(s.scoops.x,s.scoops.y,'#FF6B35',15);
+      s.frost-=15; Audio.fail(); dmgFx(s.scoops.x,s.scoops.y);
+      floater(s.scoops.x,s.scoops.y-30,pick(['STOP TAPPING SCOOPS','THAT IS NOT FIRE','BAD TAP']),'#ff5577',16);
       return;
     }
     for(let i=s.spirits.length-1;i>=0;i--){const sp=s.spirits[i]; if(Math.hypot(x-sp.x,y-sp.y)<sp.r*1.4){
-      s.frost=Math.min(150,s.frost+8); s.taps++; Audio.hit();
-      burst(sp.x,sp.y,'#FFB300',12); floater(sp.x,sp.y-15,'+8 FROST','#FFB300',16);
+      s.frost=Math.min(150,s.frost+8); s.taps++; Audio.hit(); hitFx(sp.x,sp.y,'#FFB300');
+      floater(sp.x,sp.y-15,pick(['+8 FROST','EXTINGUISHED','COOL!']),'#FFB300',16);
       s.spirits.splice(i,1); return;
     }}
   },
   result(){
     const s=this.state;
     const t=Math.floor(s.t);
-    if(GAME.loseReason) return {title:'MELTED INTO A PUDDLE 💀', sub:'THE SUN WON.', stat:'SURVIVED '+t+'s', rank:'CRINGE', color:'#ff3355'};
-    if(t>=30) return {title:'UNMELTED', sub:'SUN COULD NOT.', stat:t+'s OF FROST', rank:'GIGAGOOF', color:'#6cf'};
+    if(GAME.loseReason) return {title:pick(['MELTED INTO A PUDDLE 💀','GONE. MELTED. GOODBYE 💀','THE SUN WON AGAIN 💀']), sub:pick(['THE SUN WON.','SCOOPS DID NOT SURVIVE.','POOL OF FORMER ICE CREAM.']), stat:'SURVIVED '+t+'s', rank:'CRINGE', color:'#ff3355'};
+    if(t>=30) return {title:'UNMELTED', sub:pick(['SUN COULD NOT.','ABSOLUTE FROST.','TOO COOL TO MELT.']), stat:t+'s OF FROST', rank:'GIGAGOOF', color:'#6cf'};
     if(t>=15) return {title:'KEEPING COOL', sub:'FROSTY.', stat:t+'s', rank:'GOOFER', color:'#FFB300'};
     if(t>=8) return {title:'SLIGHTLY MELTED', sub:'DRIPPY.', stat:t+'s', rank:'TOASTED', color:'#FF6B35'};
     return {title:'INSTANT MELT', sub:'TOO HOT.', stat:t+'s', rank:'GOOF', color:'#888'};
@@ -589,45 +759,52 @@ SCENES.push({
   id:'bao', name:'BAO DROP', short:'BAO',
   colors:{bg1:'#1a0a3e',bg2:'#2d0a5e',accent:'#7C3AED',accent2:'#F0ABFC',ink:'#fff'},
   flags:{duration:25, lives:3},
+  hint:'DRAG (OR TAP) THE BOX — CATCH BUNS, NOT CHILI',
   mutators:['BUN RAIN','CHILI STORM','INVISIBLE BUNS','SUS BUNS'],
   state:{},
   reset(){
+    const bokeh=[];
+    for(let i=0;i<20;i++) bokeh.push({x:Math.random(),y:Math.random(),r:rand(20,60)});
     this.state={
       box:{x:W/2,w:W*0.24,h:30,y:H-128,vx:0,tx:W/2},
-      items:[], spawnT:0.8, caught:0, combo:0, comboT:0, maxCombo:0,
+      items:[], spawnT:0.8, caught:0, combo:0, comboT:0, maxCombo:0, elapsed:0, bokeh,
       bunRain:GAME.mutator==='BUN RAIN', chiliStorm:GAME.mutator==='CHILI STORM',
       invisible:GAME.mutator==='INVISIBLE BUNS', sus:GAME.mutator==='SUS BUNS'
     };
   },
   update(dt){
     const s=this.state;
+    s.elapsed+=dt;
     s.box.x = lerp(s.box.x, s.box.tx, 0.25);
     s.box.x=clamp(s.box.x, s.box.w/2, W-s.box.w/2);
+    // buns drop faster and faster
+    const speedR=1+clamp(s.elapsed/28,0,0.55);
     s.spawnT-=dt;
     if(s.spawnT<=0){
-      s.spawnT=rand(s.bunRain?0.4:0.7, s.bunRain?0.8:1.3);
+      s.spawnT=rand(s.bunRain?0.4:0.7, s.bunRain?0.8:1.3)*(1-clamp(s.elapsed/40,0,0.25));
       const r=Math.random();
       let type='bun';
       if(s.chiliStorm && r<0.35) type='chili';
       else if(!s.chiliStorm && r<0.2) type='chili';
       else if(s.sus && r<0.4) type='sus';
-      s.items.push({x:rand(40,W-40), y:-30, vy:rand(180,260), r:22, type, rot:0});
-      if(s.bunRain && Math.random()<0.4) s.items.push({x:rand(40,W-40), y:-30, vy:rand(180,260), r:22, type:Math.random()<0.2?'chili':'bun', rot:0});
+      s.items.push({x:rand(40,W-40), y:-30, vy:rand(180,260)*speedR, r:22, type, rot:0});
+      if(s.bunRain && Math.random()<0.4) s.items.push({x:rand(40,W-40), y:-30, vy:rand(180,260)*speedR, r:22, type:Math.random()<0.2?'chili':'bun', rot:0});
     }
     for(let i=s.items.length-1;i>=0;i--){
       const it=s.items[i]; it.y+=it.vy*dt; it.rot+=dt*2;
       if(it.y>s.box.y-10 && it.y<s.box.y+s.box.h && Math.abs(it.x-s.box.x)<s.box.w/2){
         if(it.type==='chili'){
-          Audio.fail(); addShake(14); GAME.loseLife('BIT INTO A CHILI BOMB'); burst(it.x,it.y,'#ff3355',25); return;
+          Audio.fail(); dmgFx(it.x,it.y); GAME.loseLife('BIT INTO A CHILI BOMB');
+          if(GAME.state==='playing'){ floater(it.x,it.y-20,pick(['OW!','SPICY!','-1 LIFE']),'#ff5577',18); s.items.splice(i,1);} return;
         }
         if(it.type==='sus'){
-          Audio.fail(); addShake(18); burst(it.x,it.y,'#ff3355',30); floater(it.x,it.y-20,'IT WAS A HATER 💀','#ff5577',18);
+          Audio.fail(); addShake(18); dmgFx(it.x,it.y); floater(it.x,it.y-20,'IT WAS A HATER 💀','#ff5577',18);
           GAME.lose('CAUGHT A HATER IN DISGUISE'); return;
         }
         s.caught++; s.combo++; s.comboT=1.5; s.maxCombo=Math.max(s.maxCombo,s.combo);
         const pts=Math.round(10*(1+Math.floor(s.combo/5)*0.5));
         GAME.score+=pts; Audio.coin();
-        burst(it.x,it.y,'#F0ABFC',15); floater(it.x,it.y-15,'+'+pts,'#F0ABFC',18);
+        hitFx(it.x,it.y,'#F0ABFC'); floater(it.x,it.y-15,'+'+pts,'#F0ABFC',18);
         s.items.splice(i,1); continue;
       }
       if(it.y>H+40){ s.items.splice(i,1); s.combo=0; }
@@ -637,7 +814,7 @@ SCENES.push({
   draw(){
     const s=this.state;
     ctx.fillStyle='rgba(240,171,252,0.05)';
-    for(let i=0;i<20;i++){ctx.beginPath();ctx.arc(rand(0,W),rand(0,H),rand(20,60),0,Math.PI*2);ctx.fill();}
+    for(const b of s.bokeh){ctx.beginPath();ctx.arc(b.x*W,b.y*H,b.r,0,Math.PI*2);ctx.fill();}
     ctx.save(); ctx.translate(s.box.x,s.box.y);
     ctx.fillStyle='#D4A017'; ctx.strokeStyle='#000'; ctx.lineWidth=3;
     roundRect(ctx,-s.box.w/2,0,s.box.w,s.box.h,6); ctx.fill(); ctx.stroke();
@@ -686,9 +863,9 @@ SCENES.push({
   },
   result(){
     const s=this.state;
-    if(GAME.loseReason==='CAUGHT A HATER IN DISGUISE') return {title:'CAUGHT A HATER 💀', sub:'SUS BUNS ARE NOT BUNS.', stat:s.caught+' BUNS', rank:'CRINGE', color:'#ff3355'};
-    if(GAME.loseReason) return {title:'CHILI BOMBED 💀', sub:'SPICY ENDING.', stat:s.caught+' BUNS • x'+s.maxCombo, rank:'CRINGE', color:'#ff3355'};
-    if(s.caught>=60) return {title:'BIG BAO ENERGY', sub:'BOX OVERFLOWING.', stat:s.caught+' BUNS • x'+s.maxCombo, rank:'GIGAGOOF', color:'#F0ABFC'};
+    if(GAME.loseReason==='CAUGHT A HATER IN DISGUISE') return {title:pick(['CAUGHT A HATER 💀','SUS BUN SABOTAGE 💀','IMPOSTOR IN THE BOX 💀']), sub:pick(['SUS BUNS ARE NOT BUNS.','RED HANDS. BUN SHAPED.','THE HATERS INFILTRATED.']), stat:s.caught+' BUNS', rank:'CRINGE', color:'#ff3355'};
+    if(GAME.loseReason) return {title:pick(['CHILI BOMBED 💀','TOO SPICY 💀','YOUR TONGUE IS GONE 💀']), sub:pick(['SPICY ENDING.','THAT WAS NOT A BUN.','CAPSAICIN INCIDENT.']), stat:s.caught+' BUNS • x'+s.maxCombo, rank:'CRINGE', color:'#ff3355'};
+    if(s.caught>=60) return {title:'BIG BAO ENERGY', sub:pick(['BOX OVERFLOWING.','STEAMED BUNS GALORE.','THE BOX RESPECTS YOU.']), stat:s.caught+' BUNS • x'+s.maxCombo, rank:'GIGAGOOF', color:'#F0ABFC'};
     if(s.caught>=30) return {title:'BAO MASTER', sub:'CATCHING VIBES.', stat:s.caught+' BUNS', rank:'GOOFER', color:'#7C3AED'};
     if(s.caught>=15) return {title:'DECENT BUNS', sub:'GETTING THERE.', stat:s.caught+' BUNS', rank:'TOASTED', color:'#FFB300'};
     return {title:'FEW BUNS', sub:'CATCH MORE.', stat:s.caught+' BUNS', rank:'GOOF', color:'#888'};
@@ -699,6 +876,7 @@ SCENES.push({
   id:'bread', name:'BREAD COIN', short:'BREAD',
   colors:{bg1:'#0a1a2e',bg2:'#0d2818',accent:'#00C853',accent2:'#00E5FF',ink:'#fff'},
   flags:{duration:0, lives:0, goal:true},
+  hint:'TAP GREEN $ BREAD — NEVER THE RED SELL',
   mutators:['VOLATILITY','DIAMOND HANDS','SHORT SQUEEZE','PANIC MODE'],
   state:{},
   reset(){
@@ -710,22 +888,23 @@ SCENES.push({
   },
   update(dt){
     const s=this.state; s.t+=dt;
+    const speedR=1+clamp(s.t/40,0,0.5);
     s.spawnT-=dt;
     const rate = s.volatility?0.35:0.6;
     if(s.spawnT<=0){
       s.spawnT=rand(rate*0.6,rate);
       const isSell = s.panic? Math.random()<0.55 : Math.random()<0.35;
-      s.items.push({x:rand(40,W-40), y:-30, vy:rand(150,230), r:22, sell:isSell, rot:0});
-      if(s.volatility && Math.random()<0.4) s.items.push({x:rand(40,W-40), y:-30, vy:rand(150,230), r:22, sell:Math.random()<0.4, rot:0});
+      s.items.push({x:rand(40,W-40), y:-30, vy:rand(150,230)*speedR, r:22, sell:isSell, rot:0});
+      if(s.volatility && Math.random()<0.4) s.items.push({x:rand(40,W-40), y:-30, vy:rand(150,230)*speedR, r:22, sell:Math.random()<0.4, rot:0});
     }
     for(let i=s.items.length-1;i>=0;i--){
       const it=s.items[i]; it.y+=it.vy*dt; it.rot+=dt*1.5;
-      if(it.y>H+40){s.items.splice(i,1); if(!it.sell){s.progress=Math.max(0,s.progress-3);}}
+      if(it.y>H+40){s.items.splice(i,1); if(!it.sell){s.progress=Math.max(0,s.progress-3); floater(W/2,H-118,'MISSED! -3%','#ff5577',14);}}
     }
     s.rocketY = lerp(s.rocketY, H-150 - (s.progress/100)*(H-260), 0.08);
     if(s.t%0.1<dt) s.chart.push(s.progress);
     if(s.chart.length>60) s.chart.shift();
-    if(s.progress>=100){ Audio.win(); burst(W/2,s.rocketY,'#FFD700',40,8); addShake(10); GAME.win('TO THE MOON'); }
+    if(s.progress>=100){ Audio.win(); burst(W/2,s.rocketY,'#FFD700',40,8); addShake(10); flashScreen('255,255,255',0.4); GAME.win('TO THE MOON'); }
   },
   draw(){
     const s=this.state;
@@ -786,11 +965,11 @@ SCENES.push({
       if(Math.hypot(x-it.x,y-it.y)<it.r*1.3){
         if(it.sell){
           Audio.fail(); addShake(12); s.progress=Math.max(0,s.progress-12);
-          burst(it.x,it.y,'#ff3355',20); floater(it.x,it.y-15,'SOLD THE DIP!','#ff5577',16);
+          dmgFx(it.x,it.y); floater(it.x,it.y-15,pick(['SOLD THE DIP!','PAPER HANDS!','RED!']),'#ff5577',16);
         } else {
           const gain = s.squeeze? 8 : (s.diamond? 6 : 4);
           s.progress=Math.min(100,s.progress+gain); GAME.score+=20;
-          Audio.coin(); burst(it.x,it.y,'#00C853',14); floater(it.x,it.y-15,'+'+gain+'%','#00C853',16);
+          Audio.coin(); hitFx(it.x,it.y,'#00C853'); floater(it.x,it.y-15,'+'+gain+'%','#00C853',16);
         }
         s.items.splice(i,1); return;
       }
@@ -798,8 +977,8 @@ SCENES.push({
   },
   result(){
     const s=this.state;
-    if(GAME.winReason) return {title:'BAGUETTE TO THE MOON 🚀', sub:'STONKS. DIAMOND HANDS.', stat:Math.floor(s.progress)+'% • '+GAME.score+' PTS', rank:'GIGAGOOF', color:'#00C853'};
-    if(GAME.loseReason) return {title:'SOLD THE DIP 💀', sub:'PAPER HANDS.', stat:Math.floor(s.progress)+'%', rank:'CRINGE', color:'#ff3355'};
+    if(GAME.winReason) return {title:pick(['BAGUETTE TO THE MOON 🚀','STONKS. ABSOLUTE STONKS. 🚀','BREAD SEASON NEVER ENDS 🚀']), sub:pick(['STONKS. DIAMOND HANDS.','GERALD IS PROUD.','THE LOAF ASCENDED.']), stat:Math.floor(s.progress)+'% • '+GAME.score+' PTS', rank:'GIGAGOOF', color:'#00C853'};
+    if(GAME.loseReason) return {title:pick(['SOLD THE DIP 💀','PAPER HANDS 💀','RUG PULLED BY BREAD 💀']), sub:'PAPER HANDS.', stat:Math.floor(s.progress)+'%', rank:'CRINGE', color:'#ff3355'};
     if(s.progress>=75) return {title:'ALMOST TO THE MOON', sub:'SO CLOSE.', stat:Math.floor(s.progress)+'%', rank:'GOOFER', color:'#00E5FF'};
     if(s.progress>=40) return {title:'HOLDING', sub:'DIAMOND HANDS LOADING.', stat:Math.floor(s.progress)+'%', rank:'TOASTED', color:'#FFB300'};
     return {title:'WEAK HANDS', sub:'BUY MORE.', stat:Math.floor(s.progress)+'%', rank:'GOOF', color:'#888'};
@@ -813,6 +992,7 @@ const GAME = {
   lives:3,
   time:0,
   combo:0,
+  comboTier:0,
   mutator:null,
   loseReason:null,
   winReason:null,
@@ -828,9 +1008,10 @@ function startScene(idx){
   document.getElementById('pauseBtn').textContent='❚❚';
   document.getElementById('card').classList.remove('show');
   particles.length=0; floaters.length=0; shake=0;
+  fx.callouts.length=0; fx.ripples.length=0; fx.flash=0; fx.hitStop=0; fx.introT=0; fx.hintT=0;
   GAME.sceneIdx=idx;
   GAME.score=0; GAME.lives=scene().flags.lives||3; GAME.time=scene().flags.duration>0?scene().flags.duration:0;
-  GAME.combo=0; GAME.loseReason=null; GAME.winReason=null; GAME.mutator=null;
+  GAME.combo=0; GAME.comboTier=0; GAME.loseReason=null; GAME.winReason=null; GAME.mutator=null; GAME._lastSec=-1;
   if(Math.random()<0.7) GAME.mutator = pick(scene().mutators);
   scene().reset();
   Audio.startBeat(130);
@@ -945,6 +1126,25 @@ function drawResultCard(){
   const g=c.createLinearGradient(0,0,0,ch);
   g.addColorStop(0,'#0a0a1a'); g.addColorStop(1,'#1a0a2e');
   c.fillStyle=g; c.fillRect(0,0,cw,ch);
+  // giant background emoji watermark
+  c.save();
+  c.globalAlpha=0.08; c.fillStyle='#fff'; c.font='900 380px Impact';
+  c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(r.rank==='CRINGE'?'💀':'🔥', cw/2, ch*0.52);
+  c.restore();
+  // confetti for the upper ranks / new best
+  if(r.rank==='GIGAGOOF'||r.rank==='GOOFER'||r.newBest){
+    const confCols=['#A3E635','#FF2D95','#00E5FF','#FFD700','#FF6B35','#F0ABFC','#00C853'];
+    for(let i=0;i<70;i++){
+      // deterministic pseudo-random so the PNG is stable but looks random
+      const x=((i*173+41)%cw), y=((i*269+97)%(ch-140))+70;
+      const w=6+(i%3)*4, h=10+(i%4)*5, a=(i*2.4)%6.28;
+      c.save(); c.translate(x,y); c.rotate(a);
+      c.fillStyle=confCols[i%confCols.length];
+      c.fillRect(-w/2,-h/2,w,h);
+      c.restore();
+    }
+  }
   c.fillStyle=r.color; c.fillRect(0,0,cw,12); c.fillRect(0,ch-12,cw,12);
   c.fillStyle='rgba(255,255,255,0.4)'; c.font='bold 22px Impact'; c.textAlign='center';
   c.fillText(r.scene, cw/2, 60);
@@ -969,10 +1169,16 @@ function drawResultCard(){
     c.strokeText('★ NEW BEST ★',0,0); c.fillText('★ NEW BEST ★',0,0);
     c.restore();
   }
+  // dynamic share caption
+  const caps = r.rank==='CRINGE'
+    ? ['SCREENSHOT OR NO RIZZ 💀','TAG SOMEONE WHO\'D DO WORSE','SEND THIS TO THE GROUP CHAT','NAH. RUN IT BACK.']
+    : ['TAG SOMEONE WHO\'D CRUMBLE','POST IT. THEY DOUBT YOU.','SEND TO UR BRAINROT GROUPCHAT','THIS IS YOUR PERSONALITY NOW'];
+  c.fillStyle=r.rank==='CRINGE'?'#ff7a9a':'#FFD700'; c.font='900 22px Impact';
+  c.fillText(pick(caps), cw/2, ch-110);
   c.fillStyle='rgba(255,255,255,0.3)'; c.font='bold 16px Impact';
-  c.fillText('GOOFER GAUNTLET • BRAINROT EDITION', cw/2, ch-40);
+  c.fillText('GOOFER GAUNTLET • BRAINROT EDITION', cw/2, ch-62);
   c.fillStyle='rgba(255,255,255,0.15)'; c.font='bold 13px Impact';
-  c.fillText('sixboy666.github.io/meme-arena', cw/2, ch-20);
+  c.fillText('sixboy666.github.io/meme-arena', cw/2, ch-36);
 }
 
 document.getElementById('downloadBtn').addEventListener('click',()=>{
@@ -1018,14 +1224,19 @@ buildChips();
 
 function updateHUD(){
   document.getElementById('sScore').textContent=Math.floor(GAME.score);
-  document.getElementById('sCombo').style.display = GAME.combo>1?'block':'none';
-  document.getElementById('sCombo').textContent='x'+GAME.combo;
+  const cEl=document.getElementById('sCombo');
+  cEl.style.display = GAME.combo>1?'block':'none';
+  cEl.textContent='x'+GAME.combo;
+  cEl.style.color = GAME.combo>=10?'#FFD700':'#fff';
   const sc=scene();
   const tEl=document.getElementById('sTime');
   const lEl=document.getElementById('sLives');
-  if(sc.flags.duration>0){ tEl.style.display='block'; tEl.textContent=Math.ceil(GAME.time)+'s'; }
-  else if(sc.flags.survival){ tEl.style.display='block'; tEl.textContent=Math.floor(GAME.time)+'s'; }
-  else { tEl.style.display='none'; }
+  if(sc.flags.duration>0){
+    tEl.style.display='block'; tEl.textContent=Math.ceil(GAME.time)+'s';
+    tEl.classList.toggle('urgent',GAME.state==='playing'&&GAME.time<=5);
+  }
+  else if(sc.flags.survival){ tEl.style.display='block'; tEl.textContent=Math.floor(GAME.time)+'s'; tEl.classList.remove('urgent'); }
+  else { tEl.style.display='none'; tEl.classList.remove('urgent'); }
   if(sc.flags.lives>0){ lEl.style.display='block'; lEl.textContent='❤'.repeat(Math.max(0,GAME.lives)); }
   else { lEl.style.display='none'; }
 }
@@ -1052,10 +1263,23 @@ window.addEventListener('keydown',e=>{
   if(GAME.state==='cover' && (e.key===' '||e.key==='Enter')){ startScene(GAME.sceneIdx); }
 });
 
+function checkComboTier(){
+  const sc=scene();
+  if(!sc.state || sc.state.combo===undefined) return;
+  const c=sc.state.combo;
+  const tier = c>=30?6:c>=20?5:c>=15?4:c>=10?3:c>=8?2:c>=5?1:0;
+  if(tier>GAME.comboTier){ GAME.comboTier=tier; callout(COMBO_TIERS[tier].t,COMBO_TIERS[tier].c); }
+  if(c===0) GAME.comboTier=0;
+}
+
 let last=performance.now();
 function loop(now){
   const dt=Math.min(0.05,(now-last)/1000); last=now;
   coverT+=dt;
+  // hit-stop: world freezes for a few frames after hits, FX keep playing
+  let effDt=dt;
+  if(fx.hitStop>0){ fx.hitStop-=dt; effDt=0; }
+  updateFx(dt);
   ctx.save();
   if(shake>0){ ctx.translate(rand(-shake,shake),rand(-shake,shake)); shake*=0.85; if(shake<0.3)shake=0; }
   if(GAME.state==='cover'){
@@ -1067,29 +1291,52 @@ function loop(now){
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
     if(GAME.state==='playing'){
       if(sc.flags.duration>0){
-        GAME.time-=dt;
+        GAME.time-=effDt;
         if(GAME.time<=0){ GAME.time=0; endRound(); }
+        else {
+          // urgent ticking in the last 5 seconds
+          const sec=Math.ceil(GAME.time);
+          if(sec<=5 && sec!==GAME._lastSec){ GAME._lastSec=sec; if(sec>0) Audio.tick(); }
+        }
       } else {
-        GAME.time+=dt;
+        GAME.time+=effDt;
       }
-      sc.update(dt);
+      sc.update(effDt);
       sc.draw();
-      updateParticles(); drawParticles();
-      updateFloaters(); drawFloaters();
-      if(sc.state && sc.state.combo!==undefined) GAME.combo=sc.state.combo;
+      updateParticles(effDt); drawParticles();
+      updateFloaters(effDt); drawFloaters();
+      if(sc.state && sc.state.combo!==undefined){
+        GAME.combo=sc.state.combo;
+        checkComboTier();
+      }
+      drawFx();
     } else if(GAME.state==='countdown'){
       sc.draw();
-      updateParticles(); drawParticles();
+      updateParticles(effDt); drawParticles();
+      const pulse = 1 + Math.max(0,1-GAME._cdT%1)*0.15;
+      ctx.save(); ctx.translate(W/2,H/2); ctx.scale(pulse,pulse);
       ctx.fillStyle='#fff'; ctx.font='900 120px Impact'; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.lineWidth=8; ctx.strokeStyle='#000';
       const txt = GAME.countdown>0? GAME.countdown : 'GOOF!';
-      ctx.strokeText(txt,W/2,H/2); ctx.fillStyle=sc.colors.accent; ctx.fillText(txt,W/2,H/2);
+      ctx.strokeText(txt,0,0); ctx.fillStyle=sc.colors.accent; ctx.fillText(txt,0,0);
+      ctx.restore();
       GAME._cdT=(GAME._cdT||0)+dt;
-      if(GAME._cdT>=1){ GAME._cdT=0; GAME.countdown--; Audio.tick(); if(GAME.countdown<0){GAME.state='playing';GAME.time=sc.flags.duration>0?sc.flags.duration:0;} }
+      if(GAME._cdT>=1){
+        GAME._cdT=0; GAME.countdown--; Audio.tick();
+        if(GAME.countdown<0){
+          GAME.state='playing';
+          GAME.time=sc.flags.duration>0?sc.flags.duration:0;
+          GAME._lastSec=-1;
+          fx.introT=1.5; fx.hintT=4.5;
+          addShake(6); flashScreen('255,255,255',0.25);
+        }
+      }
+      drawFx();
     } else if(GAME.state==='paused'){
       sc.draw();
-      updateParticles(); drawParticles();
-      updateFloaters(); drawFloaters();
+      drawParticles();
+      drawFloaters();
+      drawFx();
       ctx.fillStyle='rgba(0,0,0,0.65)'; ctx.fillRect(0,0,W,H);
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillStyle='#fff'; ctx.lineWidth=6; ctx.strokeStyle='#000'; ctx.font='900 64px Impact';
@@ -1103,8 +1350,9 @@ function loop(now){
   ctx.restore();
   if(input.justDown){
     Audio.init();
+    ripple(input.x,input.y);
     if(GAME.state==='cover'){ startScene(GAME.sceneIdx); }
-    else if(GAME.state==='playing'){ scene().onTap(input.x,input.y); }
+    else if(GAME.state==='playing'){ fx.hintT=0; scene().onTap(input.x,input.y); }
     else if(GAME.state==='paused'){ togglePause(); }
     input.justDown=false;
   }
@@ -1139,6 +1387,7 @@ setTimeout(()=>{
   document.getElementById('loading').style.display='none';
   requestAnimationFrame(loop);
 },300);
+window.__goof={GAME,SCENES,fx,scene,drawResultCard,startScene,checkComboTier};
 })();
 </script>
 </body>
